@@ -1,0 +1,38 @@
+menu "BSP Configuration"
+
+    choice BSP_LCD_CONTROLLER
+        prompt "Select LCD Controller Model"
+        default BSP_LCD_ILI9341
+        help
+            Choose which LCD controller is used in your hardware.
+
+        config BSP_LCD_ILI9341
+            bool "ILI9341"
+
+        config BSP_LCD_ILI9488
+            bool "ILI9488"
+
+            
+    endchoice
+
+    config XPT2046_CONVERT_ADC_TO_COORDS
+        bool "XPT2046: Convert ADC to screen coordinates"
+        default n
+        help
+            如果勾选，驱动程序内部会将原始 ADC 值转换为像素坐标。
+            如果不勾选，将返回原始 ADC 值。
+
+    config XPT2046_INTERRUPT_MODE
+        bool "XPT2046: Use interrupt mode for touch detection"
+        default n
+        help
+            如果勾选，驱动程序将使用中断模式来检测触摸事件。
+            如果不勾选，驱动程序将使用轮询模式来检测触摸事件。
+
+    config XPT2046_CONVERT_XY
+    bool "XPT2046: Convert X and Y coordinates"
+    default n
+    help
+        如果勾选，驱动程序将交换 X 和 Y 坐标的值。
+
+endmenu
