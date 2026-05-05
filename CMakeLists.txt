@@ -4,4 +4,4 @@ cmake_minimum_required(VERSION 3.16)
 set(EXTRA_COMPONENT_DIRS "components/BSP" "components/MiddleWares")
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
-project(TFM_V1.1.2)
+project(Project_V1.1.2)

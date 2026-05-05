@@ -239,9 +239,7 @@ static esp_err_t xpt2046_read_data(esp_lcd_touch_handle_t tp)
     return ESP_OK;
 }
 
-static bool xpt2046_get_xy(esp_lcd_touch_handle_t tp, uint16_t *x, uint16_t *y,
-                        uint16_t *strength, uint8_t *point_num,
-                        uint8_t max_point_num)
+static bool xpt2046_get_xy(esp_lcd_touch_handle_t tp, uint16_t *x, uint16_t *y,uint16_t *strength, uint8_t *point_num,uint8_t max_point_num)
 {
     XPT2046_LOCK(&tp->data.lock);
 
