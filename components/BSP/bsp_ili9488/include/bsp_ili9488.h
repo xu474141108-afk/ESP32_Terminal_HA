@@ -1,7 +1,7 @@
 #pragma once
 
 #include "esp_err.h"
-#include "esp_lcd_types.h" // 必须包含这个，才能识别 esp_lcd_panel_handle_t
+#include "esp_lcd_types.h" 
 
 #ifdef __cplusplus
 extern "C" {

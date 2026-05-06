@@ -10,7 +10,6 @@
 #define HA_ALL_STATES_URL "http://192.168.1.137:8123/api/states"
 
 
-// 1. 将 cJSON 钩子绑定到 PSRAM，防止消耗内部 RAM
 static void* cjson_psram_malloc(size_t size) {
     return heap_caps_malloc(size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
 }
@@ -98,7 +97,7 @@ void get_ha_states_to_psram() {
                     if (cJSON_IsString(fname_obj)) fname = fname_obj->valuestring;
                 }
 
-                // 存入您的 LVGL 全局数组
+                // 存入全局数组
                 strncpy(g_device_list[g_device_count].entity_id, eid, 63);
                 strncpy(g_device_list[g_device_count].friendly_name, fname, 63);
                 g_device_count++;

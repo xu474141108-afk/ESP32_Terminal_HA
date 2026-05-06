@@ -97,7 +97,7 @@ static void example_lvgl_port_task(void *arg)
             if (bits & HA_DATA_READY_BIT) {
                 ESP_LOGI("LVGL_UI", "HA_DATA_READY_BIT 掩码值: 0x%02x, 当前事件组状态: 0x%02x", (int)HA_DATA_READY_BIT, (int)bits); 
                 _lock_acquire(&lvgl_api_lock);
-                // 调用你封装好的更新列表函数
+                // 更新列表函数
                 HA_json_to_list(guider_ui.screen_list_entity, g_device_list, g_device_count);
                 _lock_release(&lvgl_api_lock);
             }

@@ -18,10 +18,9 @@ static char new_version_str[32] = {0};
 
 
 
-// 检查版本的逻辑（这里简化模拟，您可以调用 HTTP API 获取版本号）
 void check_new_version_available(void)
 {
-    // 假设您的逻辑通过 HTTP 请求获取到了服务器的新版本号
+    // 通过 HTTP 请求获取到了服务器的新版本号
     // strcpy(new_version_str, "v1.2.0"); 
     
     // 比较新版本和当前运行的版本

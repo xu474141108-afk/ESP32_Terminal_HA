@@ -5,15 +5,13 @@
 #include "driver/spi_master.h"
 #include "esp_err.h"
 #include "esp_log.h"
-#include "driver/ledc.h" // 确保包含了头文件
+#include "driver/ledc.h" 
 #include "sdkconfig.h"
+
 //其他文件
 #include "bsp_display.h"
 #include "lvgl_port.h"
-
-
 #include "bsp_xpt2046.h"
-
 #ifdef CONFIG_BSP_LCD_ILI9341
 #include "bsp_ili9341.h"
 #elif CONFIG_BSP_LCD_ILI9488
@@ -22,8 +20,8 @@
 
 #define LCD_SPI_MODE 0
 #define LCD_SPI_CLK_FREQ_HZ 20 * 1000 * 1000 // 20MHz
-#define TOUCH_SPI_CLK_FREQ_HZ 2 * 1000 * 1000 // 20MHz
-#define LCD_LIGHT_LEVEL 80 // 亮度级别，范围0-10
+#define TOUCH_SPI_CLK_FREQ_HZ 2 * 1000 * 1000 // 2MHz
+#define LCD_LIGHT_LEVEL 80 
 #define LCD_BK_LIGHT_ON_LEVEL  1
 #define LCD_COLOR_MODE 16
 
@@ -32,7 +30,7 @@
 
 #define LCD_WIDTH 320
 #define LCD_HEIGHT 240
-#define LCD_BUFFER_SIZE (LCD_WIDTH * LCD_HEIGHT * 2) // 320x240, RGB565格式，每像素2字节
+#define LCD_BUFFER_SIZE (LCD_WIDTH * LCD_HEIGHT * 2) // 320x240，每像素2字节
 #define LCD_HOST SPI2_HOST
 #define LCD_DMA_CHAN 1 
 
@@ -116,13 +114,13 @@ static void bsp_display_LCD_init(void)
     ESP_LOGI(TAG, "Install panel IO");
 
     esp_lcd_panel_io_spi_config_t io_config = {
-    .dc_gpio_num = LCD_DC_GPIO_NUM,        // 数据/命令切换引脚
-    .cs_gpio_num = LCD_CS_GPIO_NUM,        // 片选引脚
-    .pclk_hz = LCD_SPI_CLK_FREQ_HZ, // 时钟频率 20MHz
+    .dc_gpio_num = LCD_DC_GPIO_NUM,        
+    .cs_gpio_num = LCD_CS_GPIO_NUM,        
+    .pclk_hz = LCD_SPI_CLK_FREQ_HZ,
     .lcd_cmd_bits = LCD_CMD_BITS,        
     .lcd_param_bits = LCD_PARAM_BITS,      
-    .spi_mode = LCD_SPI_MODE,            // SPI 模式 0
-    .trans_queue_depth = 10,  // 传输队列深度
+    .spi_mode = LCD_SPI_MODE,            
+    .trans_queue_depth = 10, 
     
     };
     ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi((esp_lcd_spi_bus_handle_t)LCD_HOST, &io_config, &io_handle));
@@ -144,7 +142,7 @@ static void bsp_display_LCD_init(void)
     gpio_set_level(LCD_BL_GPIO_NUM, LCD_BK_LIGHT_ON_LEVEL);
     ESP_LOGI(TAG, "Display initialized successfully");
 
-    // bsp_display_brightness(LCD_LIGHT_LEVEL); // 设置初始亮度为 100%    
+    // bsp_display_brightness(LCD_LIGHT_LEVEL);   
 }
 
 
@@ -154,7 +152,7 @@ static void bsp_display_touch_init(void)
     gpio_config_t io_conf = {
         .pin_bit_mask = 1ULL << TOUCH_IRQ_GPIO_NUM,
         .mode = GPIO_MODE_INPUT,
-        .pull_up_en = GPIO_PULLUP_ENABLE,     // 开启上拉电阻
+        .pull_up_en = GPIO_PULLUP_ENABLE,     
         .pull_down_en = GPIO_PULLDOWN_DISABLE,
         .intr_type = GPIO_INTR_DISABLE,       // 如果底层中断由触摸库接管，这里设为 DISABLE
     };
