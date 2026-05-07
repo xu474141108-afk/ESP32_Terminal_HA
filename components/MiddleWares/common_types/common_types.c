@@ -9,3 +9,4 @@ int g_device_count = 0;
 EventGroupHandle_t ha_event_group;
 
 EventGroupHandle_t s_wifi_event_group = NULL;
+EventGroupHandle_t ota_event_group = NULL;

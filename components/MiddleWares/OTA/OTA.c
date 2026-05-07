@@ -6,12 +6,7 @@
 #define WIFI_CONNECTION_ERROR              (1 << 0)
 
 
-#define OTA_VERSION_AVAILABLE_FLAG         (1 << 0) // 标志位：新版本可用
-#define OTA_UPDATE_STARTED_FLAG            (1 << 1) // 标志位：OTA 更新开始
-#define OTA_UPDATE_CANCELLED_FLAG          (1 << 2) // 标志位：OTA 更新取消         
-#define OTA_EVENT_SUCCESS                  (1 << 3) // 更新成功
-#define OTA_EVENT_FAILED                   (1 << 4) // 更新失败
-#define OTA_EVENT_REBOOT                   (1 << 5) // 请求重启
+
 
 
 static char new_version_str[32] = {0};
