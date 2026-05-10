@@ -12,7 +12,7 @@
   "clangd.arguments": [
     "--background-index",
     "--query-driver=**",
-    "--compile-commands-dir=d:\\Documentos\\CodeLib\\ESP32\\TFM_V1.1.2\\build"
+    "--compile-commands-dir=d:\\Documentos\\CodeLib\\ESP32\\ESP32_Terminal_HA\\build"
   ],
   "idf.flashType": "UART"
 }
