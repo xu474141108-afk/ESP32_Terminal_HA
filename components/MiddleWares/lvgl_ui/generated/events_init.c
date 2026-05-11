@@ -20,6 +20,7 @@
 //ENTITY INCLUDE
 #include "ha_http_control.h"
 //OTA INCLUDE
+#include "custom.h"
 #include "OTA.h"
 
 static void screen_btn_APConfig_event_handler (lv_event_t *e)
@@ -58,7 +59,9 @@ static void screen_btn_ota_event_handler (lv_event_t *e)
     switch (code) {
     case LV_EVENT_CLICKED:
     {
-        check_new_version_available();
+        if (g_ota_ctx.state == OTA_STATE_IDLE) {
+            xTaskCreate(OTA_version_check_task, "ota_task", 8192, NULL, 5, NULL);
+        }
         break;
     }
     default:

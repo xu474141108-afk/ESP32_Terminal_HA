@@ -99,29 +99,37 @@ static void btn_start_update_event_cb(lv_event_t * e)
     }
 
     ESP_LOGI(TAG, "用户确认更新，启动下载任务...");
-    xTaskCreate(write_ota_data, "write_ota_data", 8192, NULL, 5, NULL);
+    //xTaskCreate(write_ota_data, "write_ota_data", 8192, NULL, 5, NULL);
 }
 
 static void btn_cancel_update_event_cb(lv_event_t * e)
 {
-    ESP_LOGI(TAG, "用户取消更新");
+    
     lv_obj_t * mbox = lv_event_get_user_data(e);
+    ESP_LOGI(TAG, "用户取消更新 %s", lv_label_get_text(mbox));
     if(mbox){
         lv_msgbox_close(mbox);
     }
 
 }
 
-void OTA_check_new_version_available()
+void task_OTA_state_monitor()
 {
-    ESP_LOGI(TAG, "查询OTA版本");
-    ota_check_result_t new_version_available = check_new_version_available();
-    lv_obj_t * mbox = NULL;
-    switch (new_version_available)
+    lv_obj_t *mbox = NULL;
+    switch (g_ota_ctx.state)
     {
-        case OTA_STATUS_NEW_VERSION_AVAILABLE:
+        case OTA_STATE_IDLE:
+            break;
+
+        case OTA_STATE_CHECKING:
+            
+            ESP_LOGI(TAG, "正在检查新版本...");
+             break;
+
+        case OTA_STATE_READY:
             ESP_LOGI(TAG, "有新版本");
             mbox = lv_msgbox_create(NULL);
+            g_ota_ctx.state = OTA_STATE_IDLE;
             lv_msgbox_add_title(mbox, "OTA");
             lv_msgbox_add_text(mbox,  "New version available");
 
@@ -132,17 +140,19 @@ void OTA_check_new_version_available()
             lv_obj_add_event_cb(btn_v_cc, btn_cancel_update_event_cb, LV_EVENT_CLICKED, mbox);
             break;
 
-        case OTA_STATUS_NO_NEW_VERSION:
+        case OTA_STATE_NO_NEW:
             ESP_LOGI(TAG, "无新版本");
             mbox = lv_msgbox_create(NULL);
+            g_ota_ctx.state = OTA_STATE_IDLE;
             lv_msgbox_add_title(mbox, "OTA");
             lv_msgbox_add_text(mbox,  "No new version.");
             lv_obj_t * btn_n_cc = lv_msgbox_add_footer_button(mbox, "Cancel");
             lv_obj_add_event_cb(btn_n_cc, btn_cancel_update_event_cb, LV_EVENT_CLICKED, mbox);
             break;
 
-        case OTA_STATUS_HTTP_FAILED:
+        case OTA_STATE_HTTP_ERROR:
             ESP_LOGE(TAG, "检查新版本时发生HTTP错误");
+            g_ota_ctx.state = OTA_STATE_IDLE;
             mbox = lv_msgbox_create(NULL);
             lv_msgbox_add_title(mbox, "ERROR");
             lv_msgbox_add_text(mbox,  "HTTP Failed.");      
@@ -152,6 +162,7 @@ void OTA_check_new_version_available()
 
         default:
             ESP_LOGE(TAG, "未知的OTA状态");
+            g_ota_ctx.state = OTA_STATE_IDLE;
             mbox = lv_msgbox_create(NULL);
             lv_msgbox_add_title(mbox, "ERROR");
             lv_msgbox_add_text(mbox,  "Unknown OTA status.");     

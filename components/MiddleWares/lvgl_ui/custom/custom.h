@@ -17,7 +17,8 @@ extern "C" {
 
 void custom_init(lv_ui *ui);
 void HA_json_to_list(lv_obj_t *list_obj, ha_device_t *devices, int count) ;
-
+void OTA_check_new_version_available();
+void task_OTA_state_monitor();
 #ifdef __cplusplus
 }
 #endif
