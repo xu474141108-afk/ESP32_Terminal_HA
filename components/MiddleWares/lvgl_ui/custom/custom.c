@@ -3,13 +3,13 @@
 #include "custom.h"
 #include "esp_log.h"
 #include "ha_http_control.h"
-
+#include "OTA.h"
 
 /**********************
  *  HA new button set
  **********************/
 #define TAG "Custom"
-
+// HA设备操作界面
 static void HA_button_action(lv_event_t * e)
 {
     ESP_LOGI(TAG, "执行设备操作");
@@ -70,7 +70,6 @@ static void HA_button_event_register(lv_event_t * e)
     }
 }
 
-
 void HA_json_to_list(lv_obj_t *list_obj, ha_device_t *devices, int count) 
 {
     if (!list_obj || !devices) return;
@@ -89,11 +88,78 @@ void HA_json_to_list(lv_obj_t *list_obj, ha_device_t *devices, int count)
     }
 }
 
+//OTA升级界面
 
 
+static void btn_start_update_event_cb(lv_event_t * e)
+{
+    lv_obj_t * mbox = lv_event_get_user_data(e);
+    if(mbox){
+        lv_msgbox_close(mbox);
+    }
 
+    ESP_LOGI(TAG, "用户确认更新，启动下载任务...");
+    xTaskCreate(write_ota_data, "write_ota_data", 8192, NULL, 5, NULL);
+}
 
+static void btn_cancel_update_event_cb(lv_event_t * e)
+{
+    ESP_LOGI(TAG, "用户取消更新");
+    lv_obj_t * mbox = lv_event_get_user_data(e);
+    if(mbox){
+        lv_msgbox_close(mbox);
+    }
 
+}
+
+void OTA_check_new_version_available()
+{
+    ESP_LOGI(TAG, "查询OTA版本");
+    ota_check_result_t new_version_available = check_new_version_available();
+    lv_obj_t * mbox = NULL;
+    switch (new_version_available)
+    {
+        case OTA_STATUS_NEW_VERSION_AVAILABLE:
+            ESP_LOGI(TAG, "有新版本");
+            mbox = lv_msgbox_create(NULL);
+            lv_msgbox_add_title(mbox, "OTA");
+            lv_msgbox_add_text(mbox,  "New version available");
+
+            // 添加按钮        
+            lv_obj_t * btn_v_ud = lv_msgbox_add_footer_button(mbox, "Update");
+            lv_obj_add_event_cb(btn_v_ud, btn_start_update_event_cb, LV_EVENT_CLICKED, mbox);
+            lv_obj_t * btn_v_cc = lv_msgbox_add_footer_button(mbox, "Cancel");
+            lv_obj_add_event_cb(btn_v_cc, btn_cancel_update_event_cb, LV_EVENT_CLICKED, mbox);
+            break;
+
+        case OTA_STATUS_NO_NEW_VERSION:
+            ESP_LOGI(TAG, "无新版本");
+            mbox = lv_msgbox_create(NULL);
+            lv_msgbox_add_title(mbox, "OTA");
+            lv_msgbox_add_text(mbox,  "No new version.");
+            lv_obj_t * btn_n_cc = lv_msgbox_add_footer_button(mbox, "Cancel");
+            lv_obj_add_event_cb(btn_n_cc, btn_cancel_update_event_cb, LV_EVENT_CLICKED, mbox);
+            break;
+
+        case OTA_STATUS_HTTP_FAILED:
+            ESP_LOGE(TAG, "检查新版本时发生HTTP错误");
+            mbox = lv_msgbox_create(NULL);
+            lv_msgbox_add_title(mbox, "ERROR");
+            lv_msgbox_add_text(mbox,  "HTTP Failed.");      
+            lv_obj_t * btn_h_cc = lv_msgbox_add_footer_button(mbox, "Cancel");
+            lv_obj_add_event_cb(btn_h_cc, btn_cancel_update_event_cb, LV_EVENT_CLICKED, mbox);
+            break;
+
+        default:
+            ESP_LOGE(TAG, "未知的OTA状态");
+            mbox = lv_msgbox_create(NULL);
+            lv_msgbox_add_title(mbox, "ERROR");
+            lv_msgbox_add_text(mbox,  "Unknown OTA status.");     
+            lv_obj_t * btn_e_cc = lv_msgbox_add_footer_button(mbox, "Cancel");
+            lv_obj_add_event_cb(btn_e_cc, btn_cancel_update_event_cb, LV_EVENT_CLICKED, mbox);
+            break;
+    }
+}
 
 
 

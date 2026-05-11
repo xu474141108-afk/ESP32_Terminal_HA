@@ -15,15 +15,16 @@
 #include "nvs.h"
 #include "nvs_flash.h"
 #include "common_types.h"
+#include "OTA.h"
 
 
 #define CONFIG_EXAMPLE_FIRMWARE_UPG_URL "http://192.168.1.137:8123/api/services/light/turn_on"
 #define CONFIG_EXAMPLE_OTA_RECV_TIMEOUT 5000
-#define CONFIG_EXAMPLE_SKIP_VERSION_CHECK 0
+#define CONFIG_EXAMPLE_SKIP_VERSION_CHECK 1
+
 #define BUFFSIZE 1024
 #define WIFI_CONNECTION_ERROR              (1 << 0)
 #define TAG "OTA"
-static char new_version_str[32] = {0};
 static char ota_write_data[BUFFSIZE + 1] = { 0 };
 extern const uint8_t server_cert_pem_start[] asm("_binary_ca_cert_pem_start");
 extern const uint8_t server_cert_pem_end[] asm("_binary_ca_cert_pem_end");
@@ -31,146 +32,139 @@ static esp_http_client_handle_t client = NULL;
 static void http_cleanup(esp_http_client_handle_t client);
 static void __attribute__((noreturn)) task_fatal_error(void);
 
-static void check_new_version_available(void);
 
-void ota_task(void *pvParameter)
+
+esp_ota_handle_t update_handle = 0 ;
+const esp_partition_t *update_partition = NULL;
+
+int data_read = 0;
+
+
+ota_check_result_t check_new_version_available(void)
 {
-
-     //xTaskCreate(&check_new_version_available, "check_new_version_available", 8192, NULL, TASKNIVEL_OTA, NULL);
-}
-
-static void infinite_loop(void)
-{
-     int i = 0;
-    ESP_LOGI(TAG, "When a new firmware is available on the server, press the reset button to download it");
-    while(1) {
-        ESP_LOGI(TAG, "Waiting for a new firmware ... %d", ++i);
-        vTaskDelay(2000 / portTICK_PERIOD_MS);
-    }
-}
-
-static esp_partition_t check_partition_restart(const esp_partition_t **out_running_partition)
-{
+    esp_err_t err;
+    const esp_partition_t *running = NULL;
     const esp_partition_t *configured = esp_ota_get_boot_partition();
-    *out_running_partition = esp_ota_get_running_partition();
+    running = esp_ota_get_running_partition();
 
-    if (configured != *out_running_partition) {
+    if (configured != running) {
         ESP_LOGW(TAG, "Configured OTA boot partition at offset 0x%08"PRIx32", but running from offset 0x%08"PRIx32,
-                 configured->address, (*out_running_partition)->address);
+                 configured->address, running->address);
         ESP_LOGW(TAG, "(This can happen if either the OTA boot data or preferred boot image become corrupted somehow.)");
     }
     ESP_LOGI(TAG, "Running partition type %d subtype %d (offset 0x%08"PRIx32")",
-             (*out_running_partition)->type, (*out_running_partition)->subtype, (*out_running_partition)->address);
-    return *(*out_running_partition);
-}
+             running->type, running->subtype, running->address);
 
-static void check_util_download(const esp_partition_t **out_update_partition,esp_http_client_handle_t *client)
-{
-    esp_err_t err;
+        
     esp_http_client_config_t config = {
         .url = CONFIG_EXAMPLE_FIRMWARE_UPG_URL,
-        .cert_pem = (char *)server_cert_pem_start,
+        // .cert_pem = (char *)server_cert_pem_start,
         .timeout_ms = CONFIG_EXAMPLE_OTA_RECV_TIMEOUT,
         .keep_alive_enable = true,
     };
 
+    #ifdef CONFIG_EXAMPLE_SKIP_COMMON_NAME_CHECK
+        config.skip_cert_common_name_check = true;
+    #endif
 
-#ifdef CONFIG_EXAMPLE_SKIP_COMMON_NAME_CHECK
-    config.skip_cert_common_name_check = true;
-#endif
-
-    *client = esp_http_client_init(&config);
-    if (*client == NULL) {
-        ESP_LOGE(TAG, "Failed to initialise HTTP connection");
-        task_fatal_error();
+    if (client != NULL) {
+        esp_http_client_cleanup(client);
     }
+    client = esp_http_client_init(&config);
+
     err = esp_http_client_open(client, 0);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Failed to open HTTP connection: %s", esp_err_to_name(err));
         esp_http_client_cleanup(client);
-        task_fatal_error();
+        return OTA_STATUS_HTTP_FAILED;
     }
     esp_http_client_fetch_headers(client);
 
-    *out_update_partition = esp_ota_get_next_update_partition(NULL);
-    assert(*out_update_partition != NULL);
+    update_partition = esp_ota_get_next_update_partition(NULL);
+    assert(update_partition != NULL);
     ESP_LOGI(TAG, "Writing to partition subtype %d at offset 0x%"PRIx32,
-             (*out_update_partition)->subtype, (*out_update_partition)->address);
+             update_partition->subtype, update_partition->address);
+
+    data_read = esp_http_client_read(client, ota_write_data, BUFFSIZE);
+    if (data_read < 0) {
+            ESP_LOGE(TAG, "Error: SSL data read error");
+            http_cleanup(client);
+            return OTA_STATUS_HTTP_FAILED;
+    } else if (data_read > 0) {
+        esp_app_desc_t new_app_info;
+        if (data_read > sizeof(esp_image_header_t) + sizeof(esp_image_segment_header_t) + sizeof(esp_app_desc_t)) {
+            // check current version with downloading
+            memcpy(&new_app_info, &ota_write_data[sizeof(esp_image_header_t) + sizeof(esp_image_segment_header_t)], sizeof(esp_app_desc_t));
+            ESP_LOGI(TAG, "New firmware version: %s", new_app_info.version);
+
+            esp_app_desc_t running_app_info;
+            if (esp_ota_get_partition_description(running, &running_app_info) == ESP_OK) {
+                ESP_LOGI(TAG, "Running firmware version: %s", running_app_info.version);
+            }
+
+            const esp_partition_t* last_invalid_app = esp_ota_get_last_invalid_partition();
+            esp_app_desc_t invalid_app_info;
+            if (esp_ota_get_partition_description(last_invalid_app, &invalid_app_info) == ESP_OK) {
+                ESP_LOGI(TAG, "Last invalid firmware version: %s", invalid_app_info.version);
+            }
+
+            // check current version with last invalid partition
+            if (last_invalid_app != NULL) {
+                if (memcmp(invalid_app_info.version, new_app_info.version, sizeof(new_app_info.version)) == 0) {
+                    ESP_LOGW(TAG, "New version is the same as invalid version.");
+                    ESP_LOGW(TAG, "Previously, there was an attempt to launch the firmware with %s version, but it failed.", invalid_app_info.version);
+                    ESP_LOGW(TAG, "The firmware has been rolled back to the previous version.");
+                    xEventGroupSetBits(ota_event_group, OTA_VERSION_INAVAILABLE);
+                    http_cleanup(client);
+                    return OTA_STATUS_NO_NEW_VERSION;
+                }
+            }
+            if (memcmp(new_app_info.version, running_app_info.version, sizeof(new_app_info.version)) == 0) {
+                ESP_LOGW(TAG, "Current running version is the same as a new. We will not continue the update.");
+                xEventGroupSetBits(ota_event_group, OTA_VERSION_INAVAILABLE);
+                http_cleanup(client);
+                return OTA_STATUS_NO_NEW_VERSION;
+            }
+        } else {
+            ESP_LOGE(TAG, "received package is not fit len");
+            http_cleanup(client);
+            esp_ota_abort(update_handle);
+            xEventGroupSetBits(ota_event_group, OTA_HTTP_FAILED);
+            return OTA_STATUS_HTTP_FAILED;
+        }
+    }
+    return OTA_STATUS_NEW_VERSION_AVAILABLE;
+    //网络连接 下载设置等已正常 设置bit弹出OTA界面 询问用户是否更新 固件版本等信息
 }
 
-static void check_new_version_available(void)
+
+void write_ota_data(void * pvParameters)
 {
-    esp_err_t err;
-    esp_ota_handle_t update_handle = 0 ;
-    const esp_partition_t *update_partition = NULL;
-    const esp_partition_t *running = NULL;
-    esp_http_client_handle_t client = NULL;
-    check_partition_restart(&running);
-    check_util_download(&update_partition, &client);
-    //网络连接 下载设置等已正常 设置bit弹出OTA界面 询问用户是否更新 固件版本等信息
-
     int binary_file_length = 0;
-    /*deal with all receive packet*/
-
-    bool image_header_was_checked = false;
+    esp_err_t err;
+    
+    err = esp_ota_begin(update_partition, OTA_WITH_SEQUENTIAL_WRITES, &update_handle);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "esp_ota_begin failed (%s)", esp_err_to_name(err));
+        http_cleanup(client);
+        esp_ota_abort(update_handle);
+        task_fatal_error();
+    }
+    ESP_LOGI(TAG, "esp_ota_begin succeeded");
+    if (esp_ota_write( update_handle, (const void *)ota_write_data, data_read) != ESP_OK) {
+            http_cleanup(client);
+            esp_ota_abort(update_handle);
+            task_fatal_error();
+        }
+        binary_file_length += data_read;
+        
     while (1) {
-        int data_read = esp_http_client_read(client, ota_write_data, BUFFSIZE);
+        data_read = esp_http_client_read(client, ota_write_data, BUFFSIZE);
         if (data_read < 0) {
             ESP_LOGE(TAG, "Error: SSL data read error");
             http_cleanup(client);
             task_fatal_error();
         } else if (data_read > 0) {
-            if (image_header_was_checked == false) {
-                esp_app_desc_t new_app_info;
-                if (data_read > sizeof(esp_image_header_t) + sizeof(esp_image_segment_header_t) + sizeof(esp_app_desc_t)) {
-                    // check current version with downloading
-                    memcpy(&new_app_info, &ota_write_data[sizeof(esp_image_header_t) + sizeof(esp_image_segment_header_t)], sizeof(esp_app_desc_t));
-                    ESP_LOGI(TAG, "New firmware version: %s", new_app_info.version);
-
-                    esp_app_desc_t running_app_info;
-                    if (esp_ota_get_partition_description(running, &running_app_info) == ESP_OK) {
-                        ESP_LOGI(TAG, "Running firmware version: %s", running_app_info.version);
-                    }
-
-                    const esp_partition_t* last_invalid_app = esp_ota_get_last_invalid_partition();
-                    esp_app_desc_t invalid_app_info;
-                    if (esp_ota_get_partition_description(last_invalid_app, &invalid_app_info) == ESP_OK) {
-                        ESP_LOGI(TAG, "Last invalid firmware version: %s", invalid_app_info.version);
-                    }
-
-                    // check current version with last invalid partition
-                    if (last_invalid_app != NULL) {
-                        if (memcmp(invalid_app_info.version, new_app_info.version, sizeof(new_app_info.version)) == 0) {
-                            ESP_LOGW(TAG, "New version is the same as invalid version.");
-                            ESP_LOGW(TAG, "Previously, there was an attempt to launch the firmware with %s version, but it failed.", invalid_app_info.version);
-                            ESP_LOGW(TAG, "The firmware has been rolled back to the previous version.");
-                            http_cleanup(client);
-                            infinite_loop();
-                        }
-                    }
-                    if (memcmp(new_app_info.version, running_app_info.version, sizeof(new_app_info.version)) == 0) {
-                        ESP_LOGW(TAG, "Current running version is the same as a new. We will not continue the update.");
-                        http_cleanup(client);
-                        infinite_loop();
-                    }
-
-                    image_header_was_checked = true;
-
-                    err = esp_ota_begin(update_partition, OTA_WITH_SEQUENTIAL_WRITES, &update_handle);
-                    if (err != ESP_OK) {
-                        ESP_LOGE(TAG, "esp_ota_begin failed (%s)", esp_err_to_name(err));
-                        http_cleanup(client);
-                        esp_ota_abort(update_handle);
-                        task_fatal_error();
-                    }
-                    ESP_LOGI(TAG, "esp_ota_begin succeeded");
-                } else {
-                    ESP_LOGE(TAG, "received package is not fit len");
-                    http_cleanup(client);
-                    esp_ota_abort(update_handle);
-                    task_fatal_error();
-                }
-            }
             err = esp_ota_write( update_handle, (const void *)ota_write_data, data_read);
             if (err != ESP_OK) {
                 http_cleanup(client);
@@ -196,6 +190,7 @@ static void check_new_version_available(void)
     }
     // end while
     ESP_LOGI(TAG, "Total Write binary data length: %d", binary_file_length);
+
     if (esp_http_client_is_complete_data_received(client) != true) {
         ESP_LOGE(TAG, "Error in receiving complete file");
         http_cleanup(client);
@@ -220,10 +215,13 @@ static void check_new_version_available(void)
         http_cleanup(client);
         task_fatal_error();
     }
+
     ESP_LOGI(TAG, "Prepare to restart system!");
     esp_restart();
+    
     return ;
 }
+
 
 static void http_cleanup(esp_http_client_handle_t client)
 {

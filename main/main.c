@@ -22,7 +22,7 @@ void app_main(void)
                        pdFALSE,         
                        pdTRUE,           
                        portMAX_DELAY);   
-    ESP_LOGI("MAIN", "WiFi 已就绪，");
+    ESP_LOGI(TAG, "WiFi 已就绪，");
     vTaskDelay(pdMS_TO_TICKS(2000));
     while (1) {
         vTaskDelay(pdMS_TO_TICKS(8000));

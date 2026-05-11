@@ -58,8 +58,7 @@ static void screen_btn_ota_event_handler (lv_event_t *e)
     switch (code) {
     case LV_EVENT_CLICKED:
     {
-        
-        ota_task(NULL);
+        check_new_version_available();
         break;
     }
     default:
