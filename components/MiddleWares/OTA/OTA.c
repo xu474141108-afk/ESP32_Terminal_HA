@@ -57,6 +57,7 @@ static void __attribute__((noreturn)) task_fatal_error(void)
 
 void OTA_version_check_task(void *pvParameters)
 {
+    g_ota_ctx.state = OTA_STATE_CHECKING;
     esp_err_t err;    
     esp_http_client_config_t config = {
         .url = CONFIG_EXAMPLE_FIRMWARE_UPG_URL,

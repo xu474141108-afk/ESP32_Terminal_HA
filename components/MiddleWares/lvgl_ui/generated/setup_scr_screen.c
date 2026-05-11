@@ -114,7 +114,7 @@ void setup_scr_screen(lv_ui *ui)
     lv_label_set_text(screen_tabview_main_tab_3_label, "");
 
     //Write codes screen_tabview_set
-    ui->screen_tabview_set = lv_tabview_create(ui->screen_tabview_main_tab_3);
+    ui->screen_tabview_set = lv_tabview_create(ui->screen_tabview_main_tab_1);
     lv_obj_set_pos(ui->screen_tabview_set, -5, -10);
     lv_obj_set_size(ui->screen_tabview_set, 305, 190);
     lv_obj_set_scrollbar_mode(ui->screen_tabview_set, LV_SCROLLBAR_MODE_OFF);

@@ -103,9 +103,9 @@ static void btn_start_update_event_cb(lv_event_t * e)
 }
 
 static void btn_cancel_update_event_cb(lv_event_t * e)
-{
-    
+{ 
     lv_obj_t * mbox = lv_event_get_user_data(e);
+    g_ota_ctx.state = OTA_STATE_IDLE;
     ESP_LOGI(TAG, "用户取消更新 %s", lv_label_get_text(mbox));
     if(mbox){
         lv_msgbox_close(mbox);
@@ -116,34 +116,48 @@ static void btn_cancel_update_event_cb(lv_event_t * e)
 void task_OTA_state_monitor()
 {
     lv_obj_t *mbox = NULL;
+    lv_obj_t *checking_mbox = NULL;
     switch (g_ota_ctx.state)
     {
         case OTA_STATE_IDLE:
             break;
 
-        case OTA_STATE_CHECKING:
-            
+        case OTA_STATE_CHECKING:  
             ESP_LOGI(TAG, "正在检查新版本...");
-             break;
-
-        case OTA_STATE_READY:
-            ESP_LOGI(TAG, "有新版本");
-            mbox = lv_msgbox_create(NULL);
-            g_ota_ctx.state = OTA_STATE_IDLE;
-            lv_msgbox_add_title(mbox, "OTA");
-            lv_msgbox_add_text(mbox,  "New version available");
-
-            // 添加按钮        
-            lv_obj_t * btn_v_ud = lv_msgbox_add_footer_button(mbox, "Update");
-            lv_obj_add_event_cb(btn_v_ud, btn_start_update_event_cb, LV_EVENT_CLICKED, mbox);
-            lv_obj_t * btn_v_cc = lv_msgbox_add_footer_button(mbox, "Cancel");
-            lv_obj_add_event_cb(btn_v_cc, btn_cancel_update_event_cb, LV_EVENT_CLICKED, mbox);
+            if(checking_mbox == NULL){
+                checking_mbox = lv_msgbox_create(NULL);
+                lv_msgbox_add_title(checking_mbox, "OTA");
+                lv_msgbox_add_text(checking_mbox,  "Checking for new version...");
+            }
             break;
 
+        case OTA_STATE_READY:
+            if(checking_mbox){
+                lv_msgbox_close(checking_mbox);
+                checking_mbox = NULL;
+            }
+            ESP_LOGI(TAG, "有新版本");
+            if (mbox == NULL)
+            {
+                mbox = lv_msgbox_create(NULL);
+                lv_msgbox_add_title(mbox, "OTA");
+                lv_msgbox_add_text(mbox,  "New version available");
+                // 添加按钮        
+                lv_obj_t * btn_v_ud = lv_msgbox_add_footer_button(mbox, "Update");
+                lv_obj_add_event_cb(btn_v_ud, btn_start_update_event_cb, LV_EVENT_CLICKED, mbox);
+                lv_obj_t * btn_v_cc = lv_msgbox_add_footer_button(mbox, "Cancel");
+                lv_obj_add_event_cb(btn_v_cc, btn_cancel_update_event_cb, LV_EVENT_CLICKED, mbox);
+            }
+        break;           
+            
         case OTA_STATE_NO_NEW:
             ESP_LOGI(TAG, "无新版本");
+            if(checking_mbox){
+                lv_msgbox_close(checking_mbox);
+                checking_mbox = NULL;
+            }
             mbox = lv_msgbox_create(NULL);
-            g_ota_ctx.state = OTA_STATE_IDLE;
+            
             lv_msgbox_add_title(mbox, "OTA");
             lv_msgbox_add_text(mbox,  "No new version.");
             lv_obj_t * btn_n_cc = lv_msgbox_add_footer_button(mbox, "Cancel");
@@ -152,6 +166,10 @@ void task_OTA_state_monitor()
 
         case OTA_STATE_HTTP_ERROR:
             ESP_LOGE(TAG, "检查新版本时发生HTTP错误");
+            if(checking_mbox){
+                lv_msgbox_close(checking_mbox);
+                checking_mbox = NULL;
+            }
             g_ota_ctx.state = OTA_STATE_IDLE;
             mbox = lv_msgbox_create(NULL);
             lv_msgbox_add_title(mbox, "ERROR");
@@ -161,6 +179,10 @@ void task_OTA_state_monitor()
             break;
 
         default:
+            if(checking_mbox){
+                lv_msgbox_close(checking_mbox);
+                checking_mbox = NULL;
+            }
             ESP_LOGE(TAG, "未知的OTA状态");
             g_ota_ctx.state = OTA_STATE_IDLE;
             mbox = lv_msgbox_create(NULL);

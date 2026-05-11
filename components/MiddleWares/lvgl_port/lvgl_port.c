@@ -99,7 +99,7 @@ static void example_lvgl_touch_cb(lv_indev_t *indev, lv_indev_data_t *data)
         data->point.x = touchpad_x[0];
         data->point.y = touchpad_y[0];
         data->state = LV_INDEV_STATE_PRESSED;
-        ESP_LOGW("TOUCH_DATA", "X: %u, Y: %u", data->point.x, data->point.y);
+        //ESP_LOGW("TOUCH_DATA", "X: %u, Y: %u", data->point.x, data->point.y);
     } else {
         data->state = LV_INDEV_STATE_RELEASED;
     }
