@@ -8,18 +8,25 @@ extern "C" {
 #include "freertos/event_groups.h"
 
 #define MAX_DEVICES 50
-#define HA_DATA_READY_BIT  BIT0
+#define HA_DATA_BIT     BIT0
+#define HA_DATA_READY_BIT    BIT1
+#define HA_DATA_UPDATED_BIT  BIT2
+#define HA_DATA_REMOVED_BIT  BIT3
+#define HA_DATA_CHANGED_BIT  BIT4
 
 
-#define OTA_VERSION_AVAILABLE_FLAG         (1 << 0) // 标志位：新版本可用
-#define OTA_UPDATE_STARTED_FLAG            (1 << 1) // 标志位：OTA 更新开始
-#define OTA_UPDATE_CANCELLED_FLAG          (1 << 2) // 标志位：OTA 更新取消         
-#define OTA_EVENT_SUCCESS                  (1 << 3) // 更新成功
-#define OTA_EVENT_FAILED                   (1 << 4) // 更新失败
-#define OTA_EVENT_REBOOT                   (1 << 5) // 请求重启
+#define OTA_VERSION_AVAILABLE_FLAG         BIT0 // 标志位：新版本可用
+#define OTA_UPDATE_STARTED_FLAG            BIT1 // 标志位：OTA 更新开始
+#define OTA_UPDATE_CANCELLED_FLAG          BIT2 // 标志位：OTA 更新取消         
+#define OTA_EVENT_SUCCESS                  BIT3 // 更新成功
+#define OTA_EVENT_FAILED                   BIT4 // 更新失败
+#define OTA_EVENT_REBOOT                   BIT5 // 请求重启
 
 #define HA_URL "http://192.168.1.137:8123/api/services/light/turn_on"
 #define HA_TOKEN "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJhYTcwZmE1OWQ2NjI0ZDFiYWVkNjFiM2MxZTU3MDdlZSIsImlhdCI6MTc3NzI5Mjk5NywiZXhwIjoyMDkyNjUyOTk3fQ.Z5T5IGwJm6M56h8j40y3HeuLgPwIlMwR1bQ0DxRIinI"
+
+#define TASKNIVEL_OTA 5
+
 
 typedef struct {
     char domain[16];

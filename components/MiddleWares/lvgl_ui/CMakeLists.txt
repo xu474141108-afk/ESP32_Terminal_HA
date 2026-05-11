@@ -7,5 +7,5 @@ file(GLOB_RECURSE SOURCES
 idf_component_register(SRCS ${SOURCES}
                     INCLUDE_DIRS ${INCLUDES}
                     REQUIRES lvgl common_types
-                    PRIV_REQUIRES ha_http_control app_wifi esp_lcd_touch 
+                    PRIV_REQUIRES ha_http_control app_wifi esp_lcd_touch OTA
                     )

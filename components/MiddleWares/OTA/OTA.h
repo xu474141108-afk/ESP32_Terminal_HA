@@ -4,7 +4,7 @@
 extern "C" {
 #endif
 
-void on_ota_btn_clicked(void);
+void ota_task(void *pvParameter);
 
 #ifdef __cplusplus
 }

@@ -53,12 +53,18 @@ void get_ha_states_to_psram() {
     // ESP_LOGI(TAG, "HTTP 状态码: %d", status_code);
 
     int content_length = esp_http_client_fetch_headers(client);
-    if (content_length <= 0 || content_length > 500 * 1024) {
+    if (content_length <= 0 ) {
+        ESP_LOGE(TAG, "内容长度小于合理范围 %d",content_length);
+        esp_http_client_cleanup(client);
+        return;
+    }
+    else if (content_length > 500 * 1024)
+    {
         ESP_LOGE(TAG, "内容长度超出合理范围 %d",content_length);
         esp_http_client_cleanup(client);
         return;
     }
-
+    
     // 直接在 PSRAM 中申请长度对应的内存
     char *buffer = heap_caps_malloc(content_length + 1, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     if (buffer == NULL) {
@@ -101,6 +107,9 @@ void get_ha_states_to_psram() {
                 strncpy(g_device_list[g_device_count].entity_id, eid, 63);
                 strncpy(g_device_list[g_device_count].friendly_name, fname, 63);
                 g_device_count++;
+                if(ha_event_group != NULL){
+                    xEventGroupSetBits(ha_event_group, HA_DATA_READY_BIT);
+                }
             }
         }
     }
@@ -110,12 +119,8 @@ void get_ha_states_to_psram() {
 
     if(root){
            cJSON_Delete(root); 
-        }
-    heap_caps_free(buffer); // 释放 PSRAM 内存
-    esp_http_client_cleanup(client);
-
-    if(ha_event_group != NULL){
-        xEventGroupSetBits(ha_event_group, HA_DATA_READY_BIT);
     }
+    heap_caps_free(buffer); 
+    esp_http_client_cleanup(client);
 }
 

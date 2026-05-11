@@ -20,6 +20,7 @@
 //ENTITY INCLUDE
 #include "ha_http_control.h"
 //OTA INCLUDE
+#include "OTA.h"
 
 static void screen_btn_APConfig_event_handler (lv_event_t *e)
 {
@@ -57,7 +58,8 @@ static void screen_btn_ota_event_handler (lv_event_t *e)
     switch (code) {
     case LV_EVENT_CLICKED:
     {
-        //OTA FUTION
+        
+        ota_task(NULL);
         break;
     }
     default:
