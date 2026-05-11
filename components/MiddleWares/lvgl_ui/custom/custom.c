@@ -94,6 +94,7 @@ void HA_json_to_list(lv_obj_t *list_obj, ha_device_t *devices, int count)
 static void btn_start_update_event_cb(lv_event_t * e)
 {
     lv_obj_t * mbox = lv_event_get_user_data(e);
+    g_ota_ctx.state = OTA_STATE_DOWNLOADING;
     if(mbox){
         lv_msgbox_close(mbox);
     }
@@ -156,13 +157,16 @@ void task_OTA_state_monitor()
                 lv_msgbox_close(checking_mbox);
                 checking_mbox = NULL;
             }
-            mbox = lv_msgbox_create(NULL);
+            if(mbox == NULL)
+            {
+                mbox = lv_msgbox_create(NULL);
             
-            lv_msgbox_add_title(mbox, "OTA");
-            lv_msgbox_add_text(mbox,  "No new version.");
-            lv_obj_t * btn_n_cc = lv_msgbox_add_footer_button(mbox, "Cancel");
-            lv_obj_add_event_cb(btn_n_cc, btn_cancel_update_event_cb, LV_EVENT_CLICKED, mbox);
-            break;
+                lv_msgbox_add_title(mbox, "OTA");
+                lv_msgbox_add_text(mbox,  "No new version.");
+                lv_obj_t * btn_n_cc = lv_msgbox_add_footer_button(mbox, "Cancel");
+                lv_obj_add_event_cb(btn_n_cc, btn_cancel_update_event_cb, LV_EVENT_CLICKED, mbox);
+            }
+        break;
 
         case OTA_STATE_HTTP_ERROR:
             ESP_LOGE(TAG, "检查新版本时发生HTTP错误");
@@ -170,27 +174,61 @@ void task_OTA_state_monitor()
                 lv_msgbox_close(checking_mbox);
                 checking_mbox = NULL;
             }
-            g_ota_ctx.state = OTA_STATE_IDLE;
-            mbox = lv_msgbox_create(NULL);
-            lv_msgbox_add_title(mbox, "ERROR");
-            lv_msgbox_add_text(mbox,  "HTTP Failed.");      
-            lv_obj_t * btn_h_cc = lv_msgbox_add_footer_button(mbox, "Cancel");
-            lv_obj_add_event_cb(btn_h_cc, btn_cancel_update_event_cb, LV_EVENT_CLICKED, mbox);
-            break;
+            if(mbox == NULL)
+            {
+                g_ota_ctx.state = OTA_STATE_IDLE;
+                mbox = lv_msgbox_create(NULL);
+                lv_msgbox_add_title(mbox, "ERROR");
+                lv_msgbox_add_text(mbox,  "HTTP Failed.");      
+                lv_obj_t * btn_h_cc = lv_msgbox_add_footer_button(mbox, "Cancel");
+                lv_obj_add_event_cb(btn_h_cc, btn_cancel_update_event_cb, LV_EVENT_CLICKED, mbox);
+            }
+        break;
+        case OTA_STATE_DOWNLOADING:
+            ESP_LOG(TAG,"下载中");
+            if(mbox == NULL)
+            {
+                //画个进度界面
 
+            }
+        
+        break;
+        case OTA_STATE_SUCCESS :
+            ESP_LOG(TAG,"下载成功");
+            if(mbox == NULL)
+            {
+                //画个进度界面
+
+            }
+        
+        break;
+        case OTA_STATE_FAILED:
+            ESP_LOG(TAG,"下载失败");
+            if(mbox == NULL)
+            {
+                mbox = lv_msgbox_create(NULL);
+                lv_msgbox_add_title(mbox, "ERROR");
+                lv_msgbox_add_text(mbox,  "OTA下载失败.");     
+                lv_obj_t * btn_e_cc = lv_msgbox_add_footer_button(mbox, "Cancel");
+                lv_obj_add_event_cb(btn_e_cc, btn_cancel_update_event_cb, LV_EVENT_CLICKED, mbox)
+            }
+        
+        break;
         default:
+            ESP_LOGE(TAG, "未知的OTA状态");
             if(checking_mbox){
                 lv_msgbox_close(checking_mbox);
                 checking_mbox = NULL;
             }
-            ESP_LOGE(TAG, "未知的OTA状态");
-            g_ota_ctx.state = OTA_STATE_IDLE;
-            mbox = lv_msgbox_create(NULL);
-            lv_msgbox_add_title(mbox, "ERROR");
-            lv_msgbox_add_text(mbox,  "Unknown OTA status.");     
-            lv_obj_t * btn_e_cc = lv_msgbox_add_footer_button(mbox, "Cancel");
-            lv_obj_add_event_cb(btn_e_cc, btn_cancel_update_event_cb, LV_EVENT_CLICKED, mbox);
-            break;
+            if(mbox == NULL)
+            {
+                mbox = lv_msgbox_create(NULL);
+                lv_msgbox_add_title(mbox, "ERROR");
+                lv_msgbox_add_text(mbox,  "Unknown OTA status.");     
+                lv_obj_t * btn_e_cc = lv_msgbox_add_footer_button(mbox, "Cancel");
+                lv_obj_add_event_cb(btn_e_cc, btn_cancel_update_event_cb, LV_EVENT_CLICKED, mbox);
+            }
+        break;
     }
 }
 
