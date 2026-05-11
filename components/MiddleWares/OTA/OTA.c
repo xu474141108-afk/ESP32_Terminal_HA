@@ -148,88 +148,93 @@ void OTA_version_check_task(void *pvParameters)
 }
 
 
-void write_ota_data(ota_context_t *ctx)
+void write_ota_data(void *pvParameters)
 {
-    // int binary_file_length = 0;
-    // esp_err_t err;
+    int binary_file_length = 0;
+    esp_err_t err;
     
-    // err = esp_ota_begin(ota_ctx.update_partition, OTA_WITH_SEQUENTIAL_WRITES, &ota_ctx.update_handle);
-    // if (err != ESP_OK) {
-    //     ESP_LOGE(TAG, "esp_ota_begin failed (%s)", esp_err_to_name(err));
-    //     http_cleanup(ota_ctx.http_client);
-    //     esp_ota_abort(ota_ctx.update_handle);
-    //     task_fatal_error();
-    // }
-    // ESP_LOGI(TAG, "esp_ota_begin succeeded");
-    // if (esp_ota_write( ota_ctx.update_handle, (const void *)ota_write_data, ota_ctx.data_read) != ESP_OK) {
-    //         http_cleanup(ota_ctx.http_client);
-    //         esp_ota_abort(ota_ctx.update_handle);
-    //         task_fatal_error();
-    //     }
-    //     binary_file_length += ota_ctx.data_read;
+    err = esp_ota_begin(g_ota_ctx.update_partition, OTA_WITH_SEQUENTIAL_WRITES, &g_ota_ctx.update_handle);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "esp_ota_begin failed (%s)", esp_err_to_name(err));
+        http_cleanup(g_ota_ctx.http_client);
+        esp_ota_abort(g_ota_ctx.update_handle);
+        task_fatal_error();
+    }
+    ESP_LOGI(TAG, "esp_ota_begin succeeded");
+    if (esp_ota_write( ota_ctx.update_handle, (const void *)ota_write_data, ota_ctx.data_read) != ESP_OK) {
+            http_cleanup(ota_ctx.http_client);
+            esp_ota_abort(ota_ctx.update_handle);
+            task_fatal_error();
+        }
+        binary_file_length += ota_ctx.data_read;
         
-    // while (1) {
-    //     ota_ctx.data_read = esp_http_client_read(ota_ctx.http_client, ota_write_data, BUFFSIZE);
-    //     if (ota_ctx.data_read < 0) {
-    //         ESP_LOGE(TAG, "Error: SSL data read error");
-    //         http_cleanup(ota_ctx.http_client);
-    //         task_fatal_error();
-    //     } else if (ota_ctx.data_read > 0) {
-    //         err = esp_ota_write( ota_ctx.update_handle, (const void *)ota_write_data, ota_ctx.data_read);
-    //         if (err != ESP_OK) {
-    //             http_cleanup(ota_ctx.http_client);
-    //             esp_ota_abort(ota_ctx.update_handle);
-    //             task_fatal_error();
-    //         }
-    //         binary_file_length += ota_ctx.data_read;
-    //         ESP_LOGD(TAG, "Written image length %d", binary_file_length);
-    //     } else if (ota_ctx.data_read == 0) {
-    //        /*
-    //         * As esp_http_client_read never returns negative error code, we rely on
-    //         * `errno` to check for underlying transport connectivity closure if any
-    //         */
-    //         if (errno == ECONNRESET || errno == ENOTCONN) {
-    //             ESP_LOGE(TAG, "Connection closed, errno = %d", errno);
-    //             break;
-    //         }
-    //         if (esp_http_client_is_complete_data_received(ota_ctx.http_client) == true) {
-    //             ESP_LOGI(TAG, "Connection closed");
-    //             break;
-    //         }
-    //     }
-    // }
-    // // end while
-    // ESP_LOGI(TAG, "Total Write binary data length: %d", binary_file_length);
+    while (1) {
+        ota_ctx.data_read = esp_http_client_read(ota_ctx.http_client, ota_write_data, BUFFSIZE);
+        if (ota_ctx.data_read < 0) {
+            ESP_LOGE(TAG, "Error: SSL data read error");
+            http_cleanup(ota_ctx.http_client);
+            task_fatal_error();
+        } else if (ota_ctx.data_read > 0) {
+            err = esp_ota_write( ota_ctx.update_handle, (const void *)ota_write_data, ota_ctx.data_read);
+            if (err != ESP_OK) {
+                http_cleanup(ota_ctx.http_client);
+                esp_ota_abort(ota_ctx.update_handle);
+                task_fatal_error();
+            }
+            binary_file_length += ota_ctx.data_read;
+            ESP_LOGD(TAG, "Written image length %d", binary_file_length);
+        } else if (ota_ctx.data_read == 0) {
+           /*
+            * As esp_http_client_read never returns negative error code, we rely on
+            * `errno` to check for underlying transport connectivity closure if any
+            */
+            if (errno == ECONNRESET || errno == ENOTCONN) {
+                ESP_LOGE(TAG, "Connection closed, errno = %d", errno);
+                g_ota_ctx.state = OTA_STATE_FAILED;
+                break;
+            }
+            if (esp_http_client_is_complete_data_received(ota_ctx.http_client) == true) {
+                ESP_LOGI(TAG, "Connection closed");
+                g_ota_ctx.state = OTA_STATE_FAILED;
+                break;
+            }
+        }
+    }
+    // end while
+    ESP_LOGI(TAG, "Total Write binary data length: %d", binary_file_length);
 
-    // if (esp_http_client_is_complete_data_received(ota_ctx.http_client) != true) {
-    //     ESP_LOGE(TAG, "Error in receiving complete file");
-    //     http_cleanup(ota_ctx.http_client);
-    //     esp_ota_abort(ota_ctx.update_handle);
-    //     task_fatal_error();
-    // }
+    if (esp_http_client_is_complete_data_received(ota_ctx.http_client) != true) {
+        ESP_LOGE(TAG, "Error in receiving complete file");
+        g_ota_ctx.state = OTA_STATE_FAILED;
+        http_cleanup(ota_ctx.http_client);
+        esp_ota_abort(ota_ctx.update_handle);
+        task_fatal_error();
+    }
 
-    // err = esp_ota_end(ota_ctx.update_handle);
-    // if (err != ESP_OK) {
-    //     if (err == ESP_ERR_OTA_VALIDATE_FAILED) {
-    //         ESP_LOGE(TAG, "Image validation failed, image is corrupted");
-    //     } else {
-    //         ESP_LOGE(TAG, "esp_ota_end failed (%s)!", esp_err_to_name(err));
-    //     }
-    //     http_cleanup(ota_ctx.http_client);
-    //     task_fatal_error();
-    // }
+    err = esp_ota_end(ota_ctx.update_handle);
+    if (err != ESP_OK) {
+        if (err == ESP_ERR_OTA_VALIDATE_FAILED) {
+            ESP_LOGE(TAG, "Image validation failed, image is corrupted");
+        } else {
+            ESP_LOGE(TAG, "esp_ota_end failed (%s)!", esp_err_to_name(err));
+        }
+        g_ota_ctx.state = OTA_STATE_FAILED;
+        http_cleanup(ota_ctx.http_client);
+        task_fatal_error();
+    }
 
-    // err = esp_ota_set_boot_partition(ota_ctx.update_partition);
-    // if (err != ESP_OK) {
-    //     ESP_LOGE(TAG, "esp_ota_set_boot_partition failed (%s)!", esp_err_to_name(err));
-    //     http_cleanup(ota_ctx.http_client);
-    //     task_fatal_error();
-    // }
+    err = esp_ota_set_boot_partition(ota_ctx.update_partition);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "esp_ota_set_boot_partition failed (%s)!", esp_err_to_name(err));
+        http_cleanup(ota_ctx.http_client);
+        task_fatal_error();
+    }
 
-    // ESP_LOGI(TAG, "Prepare to restart system!");
+    ESP_LOGI(TAG, "Prepare to restart system!");
+    g_ota_ctx.state = OTA_STATE_SUCCESS;
     // esp_restart();
     
-    // return ;
+    return ;
 }
 
 
