@@ -5,10 +5,19 @@
 #include "esp_heap_caps.h"
 #include "esp_rom_uart.h"
 #include "common_types.h" 
+#include "ha_http_control.h"
+
 
 #define TAG "HA_HTTP"
-#define HA_ALL_STATES_URL "http://192.168.1.137:8123/api/states"
+#define HA_FIND_STATES_URL "http://192.168.1.143:8123/api/states"
+#define HA_URL "http://192.168.1.137:8123/api/services/light/turn_on"
+#define HA_TEST_STATES_URL "http://homeassistant.local:8123/api/states"
+#define HA_TOKEN "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJhYTcwZmE1OWQ2NjI0ZDFiYWVkNjFiM2MxZTU3MDdlZSIsImlhdCI6MTc3NzI5Mjk5NywiZXhwIjoyMDkyNjUyOTk3fQ.Z5T5IGwJm6M56h8j40y3HeuLgPwIlMwR1bQ0DxRIinI"
 
+ha_device_t g_device_list[MAX_DEVICES];
+int g_device_count = 0;
+
+static void http_cleanup(esp_http_client_handle_t client);
 
 static void* cjson_psram_malloc(size_t size) {
     return heap_caps_malloc(size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
@@ -26,42 +35,43 @@ static void init_cjson_hooks() {
     cJSON_InitHooks(&hooks);
 }
 
+
+
+
 // 2. 获取并过滤数据的核心函数
 void get_ha_states_to_psram() {
     init_cjson_hooks();
     esp_http_client_config_t config = {
-        .url = HA_ALL_STATES_URL,
+        .url = HA_FIND_STATES_URL,
         .method = HTTP_METHOD_GET,
         .timeout_ms = 8000, 
         .disable_auto_redirect = true,
     };
-    esp_http_client_handle_t client = esp_http_client_init(&config);
+    esp_http_client_handle_t http_HA_client = esp_http_client_init(&config);
 
     char auth_header[512]; 
     snprintf(auth_header, sizeof(auth_header), "Bearer %s", HA_TOKEN);
-    esp_http_client_set_header(client, "Authorization", auth_header);
-    esp_http_client_set_header(client, "Content-Type", "application/json");
+    esp_http_client_set_header(http_HA_client, "Authorization", auth_header);
+    esp_http_client_set_header(http_HA_client, "Content-Type", "application/json");
 
-    esp_err_t err = esp_http_client_open(client,0);
+    esp_err_t err = esp_http_client_open(http_HA_client,0);
     if(err != ESP_OK){
         ESP_LOGE(TAG, "连接失败: %s", esp_err_to_name(err));
-        esp_http_client_cleanup(client);
+        http_cleanup(http_HA_client);
         return;
     }
 
-    // int status_code = esp_http_client_get_status_code(client);
-    // ESP_LOGI(TAG, "HTTP 状态码: %d", status_code);
 
-    int content_length = esp_http_client_fetch_headers(client);
+    int content_length = esp_http_client_fetch_headers(http_HA_client);
     if (content_length <= 0 ) {
         ESP_LOGE(TAG, "内容长度小于合理范围 %d",content_length);
-        esp_http_client_cleanup(client);
+        http_cleanup(http_HA_client);
         return;
     }
     else if (content_length > 500 * 1024)
     {
         ESP_LOGE(TAG, "内容长度超出合理范围 %d",content_length);
-        esp_http_client_cleanup(client);
+        http_cleanup(http_HA_client);
         return;
     }
     
@@ -69,11 +79,11 @@ void get_ha_states_to_psram() {
     char *buffer = heap_caps_malloc(content_length + 1, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     if (buffer == NULL) {
         ESP_LOGE(TAG, "PSRAM 申请失败！");
-        esp_http_client_cleanup(client);
+        http_cleanup(http_HA_client);
         return;
     }
 
-    int read_len = esp_http_client_read(client, buffer, content_length);
+    int read_len = esp_http_client_read(http_HA_client, buffer, content_length);
     buffer[read_len] = '\0';
 
     // 解析 JSON
@@ -121,6 +131,16 @@ void get_ha_states_to_psram() {
            cJSON_Delete(root); 
     }
     heap_caps_free(buffer); 
-    esp_http_client_cleanup(client);
+    http_cleanup(http_HA_client);
 }
 
+
+
+static void http_cleanup(esp_http_client_handle_t client)
+{
+    if (client != NULL) {
+        esp_http_client_close(client);
+        esp_http_client_cleanup(client);
+        client = NULL;
+    }
+}

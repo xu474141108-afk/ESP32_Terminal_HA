@@ -24,7 +24,8 @@ void app_main(void)
                        portMAX_DELAY);   
     ESP_LOGI(TAG, "WiFi 已就绪，");
     vTaskDelay(pdMS_TO_TICKS(2000));
-    xTaskCreate(OTA_auto_scan_task, "ota_auto_scan_task", 8192, NULL, 4, NULL);
+    xTaskCreate(OTA_autoscan_task, "ota_auto_scan_task", 8192, NULL, TASK_NIVEL_OTA_CHECK, NULL);
+    
     while (1) {
         vTaskDelay(pdMS_TO_TICKS(8000));
     }

@@ -8,11 +8,6 @@
 extern "C" {
 #endif
 
-typedef enum {
-    OTA_STATUS_NEW_VERSION_AVAILABLE = 0, // 有新版本
-    OTA_STATUS_NO_NEW_VERSION,            // 已是最新版本 (包括与 invalid 分区相同)
-    OTA_STATUS_HTTP_FAILED
-} ota_check_result_t;
 
 typedef enum {
     OTA_STATE_IDLE,          // 空闲
@@ -29,8 +24,6 @@ typedef enum {
 
 typedef struct {
     ota_state_t state;
-    esp_http_client_handle_t http_client;
-    esp_ota_handle_t update_handle;
     const esp_partition_t *update_partition;
     int data_read;
     char download_url[256];
@@ -42,9 +35,8 @@ typedef struct {
 
 extern ota_context_t g_ota_ctx;
 
-void OTA_version_check(void *pvParameters);
-void write_ota_data(void *pvParameters);
-void OTA_auto_scan_task(void *pvParameters);
+void OTA_download_data(void *pvParameters);
+void OTA_autoscan_task(void *pvParameters);
 
 #ifdef __cplusplus
 }

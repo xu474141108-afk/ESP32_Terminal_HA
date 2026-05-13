@@ -10,7 +10,7 @@
 #include "events_init.h"
 #include <stdio.h>
 #include "lvgl.h"
-
+#include "esp_log.h"
 #if LV_USE_GUIDER_SIMULATOR && LV_USE_FREEMASTER
 #include "freemaster_client.h"
 #endif
@@ -60,8 +60,13 @@ static void screen_btn_ota_event_handler (lv_event_t *e)
     case LV_EVENT_CLICKED:
     {
         if (g_ota_ctx.state == OTA_STATE_READY) {
-            // xTaskCreate(OTA_version_check_task, "ota_task", 8192, NULL, 2, NULL);
+            g_ota_ctx.state = OTA_STATE_DOWNLOADING;
+            xTaskCreatePinnedToCore(OTA_download_data, "OTA_download_data", 8192, NULL, TASK_NIVEL_OTA_DOWNLOAD, NULL,0);
+        }else{
+            ESP_LOGI("OTA", "当前状态不允许下载，状态: %d", g_ota_ctx.state);
         }
+        
+
         break;
     }
     default:

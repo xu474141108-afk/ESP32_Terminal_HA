@@ -91,35 +91,6 @@ void HA_json_to_list(lv_obj_t *list_obj, ha_device_t *devices, int count)
 //OTA升级界面
 
 
-static void btn_start_update_event_cb(lv_event_t * e)
-{
-    lv_obj_t * mbox = lv_event_get_user_data(e);
-    g_ota_ctx.state = OTA_STATE_DOWNLOADING;
-    if(mbox){
-        lv_msgbox_close(mbox);
-    }
-
-    ESP_LOGI(TAG, "用户确认更新，启动下载任务...");
-    //xTaskCreate(write_ota_data, "write_ota_data", 8192, NULL, 5, NULL);
-}
-
-
-
-static void btn_cancel_update_event_cb(lv_event_t * e)
-{ 
-    lv_obj_t * mbox = lv_event_get_user_data(e);
-    
-    
-    if(mbox){
-        lv_obj_t * content_obj = lv_msgbox_get_content(mbox);
-        if (content_obj) {
-            ESP_LOGI(TAG, "用户取消更新，提示内容为: %s", lv_label_get_text(lv_obj_get_child(content_obj, 0)));
-        }
-        lv_msgbox_close(mbox);
-    }
-    g_ota_ctx.state = OTA_STATE_IDLE;
-}
-
 void task_OTA_state_monitor(lv_timer_t * timer)
 {
     static lv_obj_t *mbox = NULL;
@@ -135,29 +106,44 @@ void task_OTA_state_monitor(lv_timer_t * timer)
 
             case OTA_STATE_CHECKING:  
                 break;
-
+            // util checked
             case OTA_STATE_READY:
-                lv_label_set_text(guider_ui.label_status, "Status: New Update!");
+                lv_label_set_text(guider_ui.label_status, "Status: Ready to update!");
                 break;
 
             case OTA_STATE_NO_NEW:
                 lv_label_set_text(guider_ui.label_status, "Status: No new version");
+                g_ota_ctx.state = OTA_STATE_IDLE; 
                 break;
 
             case OTA_STATE_HTTP_ERROR:
                 lv_label_set_text(guider_ui.label_status, "Status: HTTP error");
+                g_ota_ctx.state = OTA_STATE_IDLE; 
                 break;
 
+            // after check
             case OTA_STATE_DOWNLOADING:
                 lv_label_set_text(guider_ui.label_status, "Status: Downloading update...");
+                if(!mbox) {
+                    mbox = lv_msgbox_create(NULL);
+                    lv_obj_set_width(mbox, lv_pct(80)); // 占据屏幕宽度的 80%
+                    lv_obj_set_height(mbox, lv_pct(80)); // 占据屏幕高度的 80%
+                    lv_msgbox_add_title(mbox, "Downloading");
+                    lv_msgbox_add_text(mbox, "Please wait while the update is downloading...");
+                }
                 break;
 
             case OTA_STATE_SUCCESS :
+                if(mbox) {
+                    lv_msgbox_close(mbox);
+                    mbox = NULL;
+                }
                 lv_label_set_text(guider_ui.label_status, "Status: Update successful! Restarting...");
                 break;
 
             case OTA_STATE_FAILED:
                 lv_label_set_text(guider_ui.label_status, "Status: Update failed");
+                g_ota_ctx.state = OTA_STATE_IDLE; 
                 break;
 
             case OTA_STATE_LEN_NOFIT:

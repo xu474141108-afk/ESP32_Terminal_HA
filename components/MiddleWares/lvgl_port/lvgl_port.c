@@ -156,7 +156,7 @@ void lvgl_port_init(lvgl_panel_t *panel)
     lv_indev_set_read_cb(indev, example_lvgl_touch_cb);
 
     ESP_LOGI(TAG, "Create LVGL task");
-    xTaskCreate(example_lvgl_port_task, "LVGL", 16384, NULL, 2, NULL);
+    xTaskCreatePinnedToCore(example_lvgl_port_task, "LVGL", 16384, NULL, TASK_NIEVL_LVGL_FLUSH, NULL, 0);
 
     ESP_LOGI(TAG, "Display LVGL Meter Widget");
 }
