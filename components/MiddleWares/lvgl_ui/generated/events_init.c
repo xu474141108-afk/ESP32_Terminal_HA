@@ -59,8 +59,8 @@ static void screen_btn_ota_event_handler (lv_event_t *e)
     switch (code) {
     case LV_EVENT_CLICKED:
     {
-        if (g_ota_ctx.state == OTA_STATE_IDLE) {
-            xTaskCreate(OTA_version_check_task, "ota_task", 8192, NULL, 5, NULL);
+        if (g_ota_ctx.state == OTA_STATE_READY) {
+            // xTaskCreate(OTA_version_check_task, "ota_task", 8192, NULL, 2, NULL);
         }
         break;
     }
@@ -75,6 +75,8 @@ void events_init_screen (lv_ui *ui)
     lv_obj_add_event_cb(ui->screen_btn_3, screen_btn_3_event_handler, LV_EVENT_ALL, ui);
     lv_obj_add_event_cb(ui->screen_btn_ota, screen_btn_ota_event_handler, LV_EVENT_ALL, ui);
 }
+
+
 
 
 void events_init(lv_ui *ui)

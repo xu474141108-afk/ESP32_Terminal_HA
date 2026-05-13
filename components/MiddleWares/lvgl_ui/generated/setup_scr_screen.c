@@ -317,11 +317,31 @@ void setup_scr_screen(lv_ui *ui)
     lv_obj_set_pos(ui->screen_btn_ota, 20, 115);
     lv_obj_set_size(ui->screen_btn_ota, 180, 50);
     ui->screen_btn_ota_label = lv_label_create(ui->screen_btn_ota);
-    lv_label_set_text(ui->screen_btn_ota_label, "Version check");
+    lv_label_set_text(ui->screen_btn_ota_label, "Update Firmware");
     lv_label_set_long_mode(ui->screen_btn_ota_label, LV_LABEL_LONG_WRAP);
     lv_obj_align(ui->screen_btn_ota_label, LV_ALIGN_CENTER, 0, 0);
     lv_obj_set_style_pad_all(ui->screen_btn_ota, 0, LV_STATE_DEFAULT);
     lv_obj_set_width(ui->screen_btn_ota_label, LV_PCT(100));
+
+    ///Write codes ver_info_cont
+    lv_obj_t * ver_info_cont = lv_obj_create(ui->screen_tabview_set_tab_3);
+    lv_obj_set_size(ver_info_cont, 200, 100);             // 设置框的大小
+    lv_obj_set_pos(ver_info_cont, 10, 10);                // 设置在页面中的位置
+    lv_obj_set_style_bg_color(ver_info_cont, lv_palette_main(LV_PALETTE_GREY), 0); // 背景色
+    lv_obj_set_style_bg_opa(ver_info_cont, LV_OPA_10, 0); // 浅色背景
+    lv_obj_set_style_border_width(ver_info_cont, 1, 0);   // 边框宽度
+    lv_obj_set_style_radius(ver_info_cont, 8, 0);         // 圆角
+
+    lv_obj_set_flex_flow(ver_info_cont, LV_FLEX_FLOW_COLUMN);// 设置容器内的布局为“弹性布局”（垂直排列），这样文字会自动对齐
+    lv_obj_set_flex_align(ver_info_cont, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+    lv_obj_set_style_pad_all(ver_info_cont, 10, 0);       // 内边距
+     ui->label_status = lv_label_create(ver_info_cont);// 2. 创建状态标签 (例如：发现新版本 / 已是最新)
+    lv_label_set_text(ui->label_status, "Status: New Update!");
+    lv_obj_set_style_text_color(ui->label_status, lv_palette_main(LV_PALETTE_RED), 0); // 突出显示
+    ui->label_curr_ver = lv_label_create(ver_info_cont);// 3. 创建当前版本标签
+    lv_label_set_text(ui->label_curr_ver, "Current: v1.0.2");
+     ui->label_new_ver = lv_label_create(ver_info_cont);    // 4. 创建最新版本标签
+    lv_label_set_text(ui->label_new_ver, "Latest: v1.1.0");
 
     //Write style for screen_btn_ota, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
     lv_obj_set_style_bg_opa(ui->screen_btn_ota, 255, LV_PART_MAIN|LV_STATE_DEFAULT);

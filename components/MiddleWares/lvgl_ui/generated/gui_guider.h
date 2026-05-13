@@ -39,6 +39,10 @@ typedef struct
 	lv_obj_t *screen_btn_ota_label;
 	lv_obj_t *screen_digital_clock_1;
 	lv_obj_t *screen_label_1;
+	lv_obj_t *ver_info_cont;
+	lv_obj_t *label_status;
+	lv_obj_t *label_curr_ver;
+	lv_obj_t *label_new_ver;
 }lv_ui;
 
 typedef void (*ui_setup_scr_t)(lv_ui * ui);

@@ -103,133 +103,76 @@ static void btn_start_update_event_cb(lv_event_t * e)
     //xTaskCreate(write_ota_data, "write_ota_data", 8192, NULL, 5, NULL);
 }
 
+
+
 static void btn_cancel_update_event_cb(lv_event_t * e)
 { 
     lv_obj_t * mbox = lv_event_get_user_data(e);
-    g_ota_ctx.state = OTA_STATE_IDLE;
-    ESP_LOGI(TAG, "用户取消更新 %s", lv_label_get_text(mbox));
+    
+    
     if(mbox){
+        lv_obj_t * content_obj = lv_msgbox_get_content(mbox);
+        if (content_obj) {
+            ESP_LOGI(TAG, "用户取消更新，提示内容为: %s", lv_label_get_text(lv_obj_get_child(content_obj, 0)));
+        }
         lv_msgbox_close(mbox);
     }
-
+    g_ota_ctx.state = OTA_STATE_IDLE;
 }
 
-void task_OTA_state_monitor()
+void task_OTA_state_monitor(lv_timer_t * timer)
 {
-    lv_obj_t *mbox = NULL;
-    lv_obj_t *checking_mbox = NULL;
-    switch (g_ota_ctx.state)
-    {
-        case OTA_STATE_IDLE:
-            break;
-
-        case OTA_STATE_CHECKING:  
-            ESP_LOGI(TAG, "正在检查新版本...");
-            if(checking_mbox == NULL){
-                checking_mbox = lv_msgbox_create(NULL);
-                lv_msgbox_add_title(checking_mbox, "OTA");
-                lv_msgbox_add_text(checking_mbox,  "Checking for new version...");
-            }
-            break;
-
-        case OTA_STATE_READY:
-            if(checking_mbox){
-                lv_msgbox_close(checking_mbox);
-                checking_mbox = NULL;
-            }
-            ESP_LOGI(TAG, "有新版本");
-            if (mbox == NULL)
-            {
-                mbox = lv_msgbox_create(NULL);
-                lv_msgbox_add_title(mbox, "OTA");
-                lv_msgbox_add_text(mbox,  "New version available");
-                // 添加按钮        
-                lv_obj_t * btn_v_ud = lv_msgbox_add_footer_button(mbox, "Update");
-                lv_obj_add_event_cb(btn_v_ud, btn_start_update_event_cb, LV_EVENT_CLICKED, mbox);
-                lv_obj_t * btn_v_cc = lv_msgbox_add_footer_button(mbox, "Cancel");
-                lv_obj_add_event_cb(btn_v_cc, btn_cancel_update_event_cb, LV_EVENT_CLICKED, mbox);
-            }
-        break;           
-            
-        case OTA_STATE_NO_NEW:
-            ESP_LOGI(TAG, "无新版本");
-            if(checking_mbox){
-                lv_msgbox_close(checking_mbox);
-                checking_mbox = NULL;
-            }
-            if(mbox == NULL)
-            {
-                mbox = lv_msgbox_create(NULL);
-            
-                lv_msgbox_add_title(mbox, "OTA");
-                lv_msgbox_add_text(mbox,  "No new version.");
-                lv_obj_t * btn_n_cc = lv_msgbox_add_footer_button(mbox, "Cancel");
-                lv_obj_add_event_cb(btn_n_cc, btn_cancel_update_event_cb, LV_EVENT_CLICKED, mbox);
-            }
-        break;
-
-        case OTA_STATE_HTTP_ERROR:
-            ESP_LOGE(TAG, "检查新版本时发生HTTP错误");
-            if(checking_mbox){
-                lv_msgbox_close(checking_mbox);
-                checking_mbox = NULL;
-            }
-            if(mbox == NULL)
-            {
-                g_ota_ctx.state = OTA_STATE_IDLE;
-                mbox = lv_msgbox_create(NULL);
-                lv_msgbox_add_title(mbox, "ERROR");
-                lv_msgbox_add_text(mbox,  "HTTP Failed.");      
-                lv_obj_t * btn_h_cc = lv_msgbox_add_footer_button(mbox, "Cancel");
-                lv_obj_add_event_cb(btn_h_cc, btn_cancel_update_event_cb, LV_EVENT_CLICKED, mbox);
-            }
-        break;
-        case OTA_STATE_DOWNLOADING:
-            ESP_LOG(TAG,"下载中");
-            if(mbox == NULL)
-            {
-                //画个进度界面
-
-            }
-        
-        break;
-        case OTA_STATE_SUCCESS :
-            ESP_LOG(TAG,"下载成功");
-            if(mbox == NULL)
-            {
-                //画个进度界面
-
-            }
-        
-        break;
-        case OTA_STATE_FAILED:
-            ESP_LOG(TAG,"下载失败");
-            if(mbox == NULL)
-            {
-                mbox = lv_msgbox_create(NULL);
-                lv_msgbox_add_title(mbox, "ERROR");
-                lv_msgbox_add_text(mbox,  "OTA下载失败.");     
-                lv_obj_t * btn_e_cc = lv_msgbox_add_footer_button(mbox, "Cancel");
-                lv_obj_add_event_cb(btn_e_cc, btn_cancel_update_event_cb, LV_EVENT_CLICKED, mbox)
-            }
-        
-        break;
-        default:
-            ESP_LOGE(TAG, "未知的OTA状态");
-            if(checking_mbox){
-                lv_msgbox_close(checking_mbox);
-                checking_mbox = NULL;
-            }
-            if(mbox == NULL)
-            {
-                mbox = lv_msgbox_create(NULL);
-                lv_msgbox_add_title(mbox, "ERROR");
-                lv_msgbox_add_text(mbox,  "Unknown OTA status.");     
-                lv_obj_t * btn_e_cc = lv_msgbox_add_footer_button(mbox, "Cancel");
-                lv_obj_add_event_cb(btn_e_cc, btn_cancel_update_event_cb, LV_EVENT_CLICKED, mbox);
-            }
-        break;
+    static lv_obj_t *mbox = NULL;
+    if (!lv_obj_is_valid(mbox)) {
+        mbox = NULL;
     }
+
+    if(guider_ui.label_status) {
+        switch (g_ota_ctx.state)
+        {
+            case OTA_STATE_IDLE:
+                break;
+
+            case OTA_STATE_CHECKING:  
+                break;
+
+            case OTA_STATE_READY:
+                lv_label_set_text(guider_ui.label_status, "Status: New Update!");
+                break;
+
+            case OTA_STATE_NO_NEW:
+                lv_label_set_text(guider_ui.label_status, "Status: No new version");
+                break;
+
+            case OTA_STATE_HTTP_ERROR:
+                lv_label_set_text(guider_ui.label_status, "Status: HTTP error");
+                break;
+
+            case OTA_STATE_DOWNLOADING:
+                lv_label_set_text(guider_ui.label_status, "Status: Downloading update...");
+                break;
+
+            case OTA_STATE_SUCCESS :
+                lv_label_set_text(guider_ui.label_status, "Status: Update successful! Restarting...");
+                break;
+
+            case OTA_STATE_FAILED:
+                lv_label_set_text(guider_ui.label_status, "Status: Update failed");
+                break;
+
+            case OTA_STATE_LEN_NOFIT:
+                lv_label_set_text(guider_ui.label_status, "Status: Received data mismatch");
+                break;
+
+            default:
+                break;
+        }
+    }
+    if(guider_ui.label_curr_ver&&guider_ui.label_new_ver) {
+        lv_label_set_text_fmt(guider_ui.label_curr_ver, "Current: %s", g_ota_ctx.current_ver);
+        lv_label_set_text_fmt(guider_ui.label_new_ver, "Latest: %s", g_ota_ctx.latest_ver);
+    }
+    
 }
 
 

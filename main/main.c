@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include "sys.h"
-
+#include "OTA.h"
 //#include "widgets/menu/lv_menu_private.h"
 #define WIFI_CONNECTED_BIT  BIT0
 
@@ -24,6 +24,7 @@ void app_main(void)
                        portMAX_DELAY);   
     ESP_LOGI(TAG, "WiFi 已就绪，");
     vTaskDelay(pdMS_TO_TICKS(2000));
+    xTaskCreate(OTA_auto_scan_task, "ota_auto_scan_task", 8192, NULL, 4, NULL);
     while (1) {
         vTaskDelay(pdMS_TO_TICKS(8000));
     }

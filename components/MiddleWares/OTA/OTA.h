@@ -23,7 +23,8 @@ typedef enum {
     OTA_STATE_DOWNLOADING,   // 正在下载/写入
     OTA_STATE_INSTALLING,    // 正在校验/安装
     OTA_STATE_SUCCESS,       // 更新成功
-    OTA_STATE_FAILED         // 更新失败
+    OTA_STATE_FAILED,        // 更新失败
+    OTA_STATE_LEN_NOFIT      // 接收数据长度不匹配
 } ota_state_t;
 
 typedef struct {
@@ -32,15 +33,18 @@ typedef struct {
     esp_ota_handle_t update_handle;
     const esp_partition_t *update_partition;
     int data_read;
+    char download_url[256];
+    char current_ver[32]; 
+    char latest_ver[32];
 } ota_context_t;
 
 
 
 extern ota_context_t g_ota_ctx;
 
-void OTA_version_check_task(void *pvParameters);
-void write_ota_data(ota_context_t *ctx);
-
+void OTA_version_check(void *pvParameters);
+void write_ota_data(void *pvParameters);
+void OTA_auto_scan_task(void *pvParameters);
 
 #ifdef __cplusplus
 }
