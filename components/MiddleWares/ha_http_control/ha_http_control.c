@@ -14,8 +14,7 @@
 #define HA_TEST_STATES_URL "http://homeassistant.local:8123/api/states"
 #define HA_TOKEN "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJhYTcwZmE1OWQ2NjI0ZDFiYWVkNjFiM2MxZTU3MDdlZSIsImlhdCI6MTc3NzI5Mjk5NywiZXhwIjoyMDkyNjUyOTk3fQ.Z5T5IGwJm6M56h8j40y3HeuLgPwIlMwR1bQ0DxRIinI"
 
-ha_device_t g_device_list[MAX_DEVICES];
-int g_device_count = 0;
+ha_device_t g_HAdevice_ctx;
 
 static void http_cleanup(esp_http_client_handle_t client);
 
@@ -35,11 +34,8 @@ static void init_cjson_hooks() {
     cJSON_InitHooks(&hooks);
 }
 
-
-
-
-// 2. 获取并过滤数据的核心函数
 void get_ha_states_to_psram() {
+    g_HAdevice_ctx.state_ha = HA_STATE_CHECKING;
     init_cjson_hooks();
     esp_http_client_config_t config = {
         .url = HA_FIND_STATES_URL,
@@ -58,20 +54,15 @@ void get_ha_states_to_psram() {
     if(err != ESP_OK){
         ESP_LOGE(TAG, "连接失败: %s", esp_err_to_name(err));
         http_cleanup(http_HA_client);
+        g_HAdevice_ctx.state_ha = HA_STATE_HTTP_ERROR;
         return;
     }
-
 
     int content_length = esp_http_client_fetch_headers(http_HA_client);
-    if (content_length <= 0 ) {
-        ESP_LOGE(TAG, "内容长度小于合理范围 %d",content_length);
-        http_cleanup(http_HA_client);
-        return;
-    }
-    else if (content_length > 500 * 1024)
-    {
+    if (content_length <= 0 ||content_length > 500 * 1024) {
         ESP_LOGE(TAG, "内容长度超出合理范围 %d",content_length);
         http_cleanup(http_HA_client);
+        g_HAdevice_ctx.state_ha = HA_STATE_HTTP_ERROR;
         return;
     }
     
@@ -80,19 +71,19 @@ void get_ha_states_to_psram() {
     if (buffer == NULL) {
         ESP_LOGE(TAG, "PSRAM 申请失败！");
         http_cleanup(http_HA_client);
+        g_HAdevice_ctx.state_ha = HA_STATE_HTTP_ERROR;
         return;
     }
 
     int read_len = esp_http_client_read(http_HA_client, buffer, content_length);
     buffer[read_len] = '\0';
 
-    // 解析 JSON
     cJSON *root = cJSON_Parse(buffer);
     if (root && cJSON_IsArray(root)) {
         int array_size = cJSON_GetArraySize(root);
         ESP_LOGI(TAG, "JSON 解析成功，实体总数: %d", array_size);
         
-        g_device_count = 0;
+        g_HAdevice_ctx.device_count = 0;
 
         for (int i = 0; i < array_size; i++) {
             cJSON *item = cJSON_GetArrayItem(root, i);
@@ -103,7 +94,7 @@ void get_ha_states_to_psram() {
 
             // 筛选条件：只取 light 和 switch 设备
             if (strstr(eid, "light.") || strstr(eid, "switch.")) {
-                if (g_device_count >= MAX_DEVICES) break;
+                if (g_HAdevice_ctx.device_count >= MAX_DEVICES) break;
 
                 cJSON *attrs = cJSON_GetObjectItem(item, "attributes");
                 const char *fname = eid;
@@ -114,17 +105,16 @@ void get_ha_states_to_psram() {
                 }
 
                 // 存入全局数组
-                strncpy(g_device_list[g_device_count].entity_id, eid, 63);
-                strncpy(g_device_list[g_device_count].friendly_name, fname, 63);
-                g_device_count++;
-                if(ha_event_group != NULL){
-                    xEventGroupSetBits(ha_event_group, HA_DATA_READY_BIT);
-                }
+                strncpy(g_HAdevice_ctx.entity[g_HAdevice_ctx.device_count].entity_id, eid, 63);
+                strncpy(g_HAdevice_ctx.entity[g_HAdevice_ctx.device_count].friendly_name, fname, 63);
+                g_HAdevice_ctx.device_count++;
             }
         }
+        g_HAdevice_ctx.state_ha = HA_STATE_READY;
     }
     else{
         ESP_LOGI(TAG, "JSON 解析失败");
+        g_HAdevice_ctx.state_ha = HA_STATE_JSON_ERROR;
     }
 
     if(root){
@@ -133,8 +123,6 @@ void get_ha_states_to_psram() {
     heap_caps_free(buffer); 
     http_cleanup(http_HA_client);
 }
-
-
 
 static void http_cleanup(esp_http_client_handle_t client)
 {

@@ -22,7 +22,7 @@
 #define EXAMPLE_LVGL_TASK_MAX_DELAY_MS 10
 #define TAG "lvgl_port"
 
-extern EventGroupHandle_t ha_event_group;
+
 
 lv_ui guider_ui;
 // lock of LVGL for thread-safe
@@ -34,31 +34,18 @@ static void example_lvgl_port_task(void *arg)
     ESP_LOGI(TAG, "Starting LVGL task");
     uint32_t time_till_next_ms = 0;
 
-    //_lock_acquire(&lvgl_api_lock);      // 1. 关门上锁（保护 LVGL 线程安全）
-    lv_display_set_default(display);    // 2. 确保默认显示器正确
+    _lock_acquire(&lvgl_api_lock);      // 关门上锁
+    lv_display_set_default(display);    
     setup_ui(&guider_ui); 
-    //_lock_release(&lvgl_api_lock);      // 4. 开门放行
+    _lock_release(&lvgl_api_lock);      // 开门放行
     lv_timer_create(task_OTA_state_monitor, 100, NULL);
-
+    lv_timer_create(task_HA_state_monitor, 100, NULL);
     ESP_LOGI(TAG, "Starting ui task");
     while (1) {
-        if (ha_event_group != NULL) {
-            EventBits_t bits = xEventGroupWaitBits(ha_event_group, HA_DATA_READY_BIT, pdTRUE, pdFALSE, 0);
-            if (bits & HA_DATA_READY_BIT) {
-                ESP_LOGI("LVGL_UI", "HA_DATA_READY_BIT 掩码值: 0x%02x, 当前事件组状态: 0x%02x", (int)HA_DATA_READY_BIT, (int)bits); 
-                // 更新列表函数
-                
-                _lock_acquire(&lvgl_api_lock);
-                HA_json_to_list(guider_ui.screen_list_entity, g_device_list, g_device_count);
-                _lock_release(&lvgl_api_lock);
-            }
-        }
         _lock_acquire(&lvgl_api_lock);
         time_till_next_ms = lv_timer_handler();
         _lock_release(&lvgl_api_lock);
-        // in case of triggering a task watch dog time out
         time_till_next_ms = MAX(time_till_next_ms, EXAMPLE_LVGL_TASK_MIN_DELAY_MS);
-        // in case of lvgl display not ready yet
         time_till_next_ms = MIN(time_till_next_ms, EXAMPLE_LVGL_TASK_MAX_DELAY_MS);
         vTaskDelay(pdMS_TO_TICKS(time_till_next_ms));
     }

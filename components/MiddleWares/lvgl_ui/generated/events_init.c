@@ -22,6 +22,7 @@
 //OTA INCLUDE
 #include "custom.h"
 #include "OTA.h"
+#include "common_types.h"
 
 static void screen_btn_APConfig_event_handler (lv_event_t *e)
 {

@@ -4,6 +4,7 @@
 #include "esp_log.h"
 #include <string.h>
 #include "common_types.h"
+#include "ha_http_control.h"
 
 #define TAG "STORAGE_MGR"
 
@@ -15,7 +16,6 @@ esp_err_t storage_init(void) {
     }
     return err;
 }
-
 
 void Write_devices_to_nvs(){
     nvs_handle_t my_handle;
@@ -34,8 +34,8 @@ void save_devices_to_nvs(void) {
         return;
     }
 
-    nvs_set_i32(my_handle, "dev_count", g_device_count);
-    nvs_set_blob(my_handle, "device_list", g_device_list, sizeof(g_device_list));
+    nvs_set_i32(my_handle, "dev_count", g_HAdevice_ctx.device_count);
+    nvs_set_blob(my_handle, "device_list", g_HAdevice_ctx.entity, sizeof(g_HAdevice_ctx.entity));
     
     nvs_commit(my_handle);
     nvs_close(my_handle);
@@ -52,11 +52,11 @@ void load_devices_from_nvs(void) {
 
     int32_t count = 0;
     nvs_get_i32(my_handle, "dev_count", &count);
-    g_device_count = (int)count;
+    g_HAdevice_ctx.device_count = (int)count;
 
-    size_t required_size = sizeof(g_device_list);
-    nvs_get_blob(my_handle, "device_list", g_device_list, &required_size);
+    size_t required_size = sizeof(g_HAdevice_ctx.entity);
+    nvs_get_blob(my_handle, "device_list", g_HAdevice_ctx.entity, &required_size);
 
     nvs_close(my_handle);
-    ESP_LOGI(TAG, "NVS 读取成功，设备数: %d", g_device_count);
+    ESP_LOGI(TAG, "NVS 读取成功，设备数: %d", g_HAdevice_ctx.device_count);
 }
