@@ -111,6 +111,7 @@ void get_ha_states_to_psram() {
             }
         }
         g_HAdevice_ctx.state_ha = HA_STATE_READY;
+        
     }
     else{
         ESP_LOGI(TAG, "JSON 解析失败");

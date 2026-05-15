@@ -14,6 +14,8 @@
 
 
 static void HA_json_to_list(lv_obj_t *list_obj, ha_device_t *devices) ;
+static void HA_button_event_register(lv_event_t * e);
+static void HA_button_event_cb(lv_event_t * e) ;
 
 void task_HA_state_monitor(lv_timer_t * timer)
 {
@@ -21,7 +23,7 @@ void task_HA_state_monitor(lv_timer_t * timer)
     // if (!lv_obj_is_valid(mbox)) {
     //     mbox = NULL;
     // }
-
+    
     switch (g_HAdevice_ctx.state_ha)
     {
         case HA_STATE_IDLE:
@@ -32,28 +34,33 @@ void task_HA_state_monitor(lv_timer_t * timer)
 
         // util checked
         case HA_STATE_READY:
+            ESP_LOGI(TAG, "HA设备状态: READY，准备将设备添加到 UI 列表");
             HA_json_to_list(guider_ui.screen_list_entity, &g_HAdevice_ctx);
             break;
 
         case HA_STATE_JSON_ERROR:
+            ESP_LOGE(TAG, "JSON 解析失败");
             g_HAdevice_ctx.state_ha = HA_STATE_IDLE;
             break;
 
 
         case HA_STATE_HTTP_ERROR:
+            ESP_LOGE(TAG, "HTTP 请求失败");
             g_HAdevice_ctx.state_ha = HA_STATE_IDLE;
             break;
 
         // after check
         case HA_STATE_DOWNLOADING:
-
+            ESP_LOGI(TAG, "正在将设备添加到 UI 列表...");
             break;
 
         case HA_STATE_SUCCESS :
+            ESP_LOGI(TAG, "设备已成功添加到 UI 列表");
             g_HAdevice_ctx.state_ha = HA_STATE_IDLE;
             break;
 
         case HA_STATE_FAILED:
+            ESP_LOGE(TAG, "设备添加到 UI 列表失败");
             g_HAdevice_ctx.state_ha = HA_STATE_IDLE;
             break;
 
@@ -61,7 +68,6 @@ void task_HA_state_monitor(lv_timer_t * timer)
             break;
     }
 }
-
 
 static void HA_button_action(lv_event_t * e)
 {
@@ -123,12 +129,14 @@ static void HA_button_event_cb(lv_event_t * e)
 
 static void HA_json_to_list(lv_obj_t *list_obj, ha_device_t *devices) 
 {
+    g_HAdevice_ctx.state_ha = HA_STATE_DOWNLOADING;
     if (!list_obj || !devices) {
         g_HAdevice_ctx.state_ha = HA_STATE_FAILED;
         ESP_LOGE(TAG, "无效的列表对象或设备数据");
+        return;
     }
-    return;
-    g_HAdevice_ctx.state_ha = HA_STATE_DOWNLOADING;
+
+
     lv_obj_clean(list_obj); 
     ESP_LOGI(TAG, "正在将 %d 个设备添加到 UI 列表...", devices->device_count);
 
