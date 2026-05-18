@@ -39,7 +39,7 @@ static void example_lvgl_port_task(void *arg)
     lv_display_set_default(display);    
     setup_ui(&guider_ui); 
     _lock_release(&lvgl_api_lock);      // 开门放行
-    // lv_timer_create(task_OTA_state_monitor, 100, NULL);
+    lv_timer_create(task_OTA_state_monitor, 100, NULL);
     // lv_timer_create(task_HA_state_monitor, 100, NULL);
     ESP_LOGI(TAG, "Starting ui task");
     while (1) {

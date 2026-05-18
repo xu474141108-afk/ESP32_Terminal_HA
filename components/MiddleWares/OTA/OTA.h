@@ -11,6 +11,7 @@ extern "C" {
 
 typedef enum {
     OTA_STATE_IDLE,          // 空闲
+    OTA_STATE_OTA_SCREEN,    // 正在检测版本
     OTA_STATE_CHECKING,      // 正在检测版本
     OTA_STATE_HTTP_ERROR,    // HTTP 请求失败
     OTA_STATE_READY,         // 发现新版本，等待用户确认
@@ -35,7 +36,7 @@ typedef struct {
 
 extern ota_context_t g_ota_ctx;
 
-void OTA_download_data(void *pvParameters);
+void OTA_download_task(void *pvParameters);
 void OTA_autoscan_task(void *pvParameters);
 
 #ifdef __cplusplus

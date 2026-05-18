@@ -111,14 +111,13 @@ static void OTA_version_check_task(void *pvParameters)
 
 
 
-void OTA_download_data(void *pvParameters)
+void OTA_download_task(void *pvParameters)
 {
     if(g_ota_ctx.state != OTA_STATE_DOWNLOADING) return;
 
     int binary_file_length = 0;
     esp_ota_handle_t update_handle = 0 ;
     g_ota_ctx.update_partition = esp_ota_get_next_update_partition(NULL);
-
 
     esp_http_client_config_t http_config = {
         .url = g_ota_ctx.download_url,
@@ -175,6 +174,7 @@ void OTA_download_data(void *pvParameters)
                 http_cleanup(http_OTA_Download_client);
                 esp_ota_abort(update_handle);
                 g_ota_ctx.state = OTA_STATE_FAILED;
+                vTaskDelete(NULL); 
             }
         }
         vTaskDelay(pdMS_TO_TICKS(10));
@@ -186,6 +186,7 @@ void OTA_download_data(void *pvParameters)
         http_cleanup(http_OTA_Download_client);
         esp_ota_abort(update_handle);
         g_ota_ctx.state = OTA_STATE_FAILED;
+        vTaskDelete(NULL); 
     }
 
     // 7. 设置下次启动的分区
@@ -194,13 +195,14 @@ void OTA_download_data(void *pvParameters)
         ESP_LOGE(TAG, "设置启动分区失败: %s", esp_err_to_name(err));
         http_cleanup(http_OTA_Download_client);
         g_ota_ctx.state = OTA_STATE_FAILED;
+        vTaskDelete(NULL);
     }
 
     ESP_LOGI(TAG, "OTA 成功！系统将在 10 秒后重启...");
     g_ota_ctx.state = OTA_STATE_SUCCESS;
     vTaskDelay(pdMS_TO_TICKS(1*1000));
     esp_restart();
-
+    
 }
 
 static void http_cleanup(esp_http_client_handle_t client)

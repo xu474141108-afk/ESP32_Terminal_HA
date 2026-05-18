@@ -157,75 +157,69 @@ static void HA_json_to_list(lv_obj_t *list_obj, ha_device_t *devices)
 
 void task_OTA_state_monitor(lv_timer_t * timer)
 {
-    // static lv_obj_t *mbox = NULL;
-    // if (!lv_obj_is_valid(mbox)) {
-    //     mbox = NULL;
-    // }
+    if (lv_scr_act() != guider_ui.screen_OTA) {
+        return;
+    }
 
-    // if(guider_ui.label_status) {
-    //     switch (g_ota_ctx.state)
-    //     {
-    //         case OTA_STATE_IDLE:
-    //             break;
+    if (guider_ui.screen_OTA_label_OTA_state == NULL || guider_ui.screen_OTA_label_OTA_info1 == NULL || guider_ui.screen_OTA_label_OTA_info2 == NULL) {
+        ESP_LOGI("UI_EVENT", "OTA界面标签未初始化，无法更新状态显示");
+        return;
+    }
 
-    //         case OTA_STATE_CHECKING:  
-    //             break;
-    //         // util checked
-    //         case OTA_STATE_READY:
-    //             lv_label_set_text(guider_ui.label_status, "Status: Ready to update!");
-    //             break;
+    //逻辑更改 进入页面后才开始http请求检查版本，避免不必要的请求和状态更新
+    static ota_state_t last_state = -1;
+    if(g_ota_ctx.state != last_state) {
+        switch (g_ota_ctx.state)
+        {
+            case OTA_STATE_IDLE:
+                lv_label_set_text(guider_ui.screen_OTA_label_OTA_state, "Status: Ready to update!");
+                break;
 
-    //         case OTA_STATE_NO_NEW:
-    //             lv_label_set_text(guider_ui.label_status, "Status: No new version");
-    //             g_ota_ctx.state = OTA_STATE_IDLE; 
-    //             break;
+            case OTA_STATE_CHECKING: 
+                lv_label_set_text(guider_ui.screen_OTA_label_OTA_state, "Status: Checking for updates...");
+                break;
+            // util checked
+            case OTA_STATE_READY:
+                lv_label_set_text(guider_ui.screen_OTA_label_OTA_state, "Status: Ready to update!");
+                lv_label_set_text_fmt(guider_ui.screen_OTA_label_OTA_info2, "Latest: %s", g_ota_ctx.download_url);
+                break;
 
-    //         case OTA_STATE_HTTP_ERROR:
-    //             lv_label_set_text(guider_ui.label_status, "Status: HTTP error");
-    //             g_ota_ctx.state = OTA_STATE_IDLE; 
-    //             break;
+            case OTA_STATE_NO_NEW:
+                lv_label_set_text(guider_ui.screen_OTA_label_OTA_state, "Status: No new version");
+                g_ota_ctx.state = OTA_STATE_IDLE; 
+                break;
 
-    //         // after check
-    //         case OTA_STATE_DOWNLOADING:
-    //             lv_label_set_text(guider_ui.label_status, "Status: Downloading update...");
-    //             if(!mbox) {
-    //                 mbox = lv_msgbox_create(NULL);
-    //                 lv_obj_set_width(mbox, lv_pct(80)); // 占据屏幕宽度的 80%
-    //                 lv_obj_set_height(mbox, lv_pct(80)); // 占据屏幕高度的 80%
-    //                 lv_msgbox_add_title(mbox, "Downloading");
-    //                 lv_msgbox_add_text(mbox, "Please wait while the update is downloading...");
-    //             }
-    //             break;
+            case OTA_STATE_HTTP_ERROR:
+                lv_label_set_text(guider_ui.screen_OTA_label_OTA_state, "Status: HTTP error");
+                g_ota_ctx.state = OTA_STATE_IDLE; 
+                break;
 
-    //         case OTA_STATE_SUCCESS :
-    //             if(mbox) {
-    //                 lv_msgbox_close(mbox);
-    //                 mbox = NULL;
-    //             }
-    //             lv_label_set_text(guider_ui.label_status, "Status: Update successful! Restarting...");
-    //             break;
+            // after check
+            case OTA_STATE_DOWNLOADING:
+                lv_label_set_text(guider_ui.screen_OTA_label_OTA_state, "Status: Downloading update...");
+                break;
 
-    //         case OTA_STATE_FAILED:
-    //             lv_label_set_text(guider_ui.label_status, "Status: Update failed");
-    //             g_ota_ctx.state = OTA_STATE_IDLE; 
-    //             break;
+            case OTA_STATE_SUCCESS :
+                lv_label_set_text(guider_ui.screen_OTA_label_OTA_state, "Status: Update successful! Restarting...");
+                break;
 
-    //         case OTA_STATE_LEN_NOFIT:
-    //             lv_label_set_text(guider_ui.label_status, "Status: Received data mismatch");
-    //             break;
+            case OTA_STATE_FAILED:
+                lv_label_set_text(guider_ui.screen_OTA_label_OTA_state, "Status: Update failed");
+                g_ota_ctx.state = OTA_STATE_IDLE; 
+                break;
 
-    //         default:
-    //             break;
-    //     }
-    // }
-    // if(guider_ui.label_curr_ver&&guider_ui.label_new_ver) {
-    //     lv_label_set_text_fmt(guider_ui.label_curr_ver, "Current: %s", g_ota_ctx.current_ver);
-    //     lv_label_set_text_fmt(guider_ui.label_new_ver, "Latest: %s", g_ota_ctx.latest_ver);
-    // }
-    
+            case OTA_STATE_LEN_NOFIT:
+                lv_label_set_text(guider_ui.screen_OTA_label_OTA_state, "Status: Received data mismatch");
+                break;
+
+            default:
+                lv_label_set_text(guider_ui.screen_OTA_label_OTA_state, "Status: Unknown state");
+                break;
+        }
+        last_state = g_ota_ctx.state; 
+        lv_label_set_text_fmt(guider_ui.screen_OTA_label_OTA_info1, "Current: %s", g_ota_ctx.latest_ver);
+    }
 }
-
-
 
 void custom_init(lv_ui *ui)
 {

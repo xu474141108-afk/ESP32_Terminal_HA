@@ -228,27 +228,3 @@ void bsp_display_init(void)
 
 
 
-void fill_screen(esp_lcd_panel_handle_t panel_handle,int x,int y, uint16_t color) {
-    int w = x;
-    int h = y;
-
-    // 1. 将颜色值转换为大端
-    uint16_t color_be = __builtin_bswap16(color);
-
-    int rows_at_once = 10;
-    uint16_t *buffer = heap_caps_malloc(w * rows_at_once * sizeof(uint16_t), MALLOC_CAP_DMA);
-    if (!buffer) return;
-    for (int i = 0; i < w * rows_at_once; i++) {
-        buffer[i] = color_be;
-    }
-
-    // 2. 分块发送
-    for (int y = 0; y < h; y += rows_at_once) {
-        int current_rows = (y + rows_at_once <= h) ? rows_at_once : (h - y);
-        esp_lcd_panel_draw_bitmap(panel_handle, 0, y, w, y + current_rows, buffer);
-    }
-
-    free(buffer);
-}
-
-
