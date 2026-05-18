@@ -19,7 +19,7 @@
 #endif
 
 #define LCD_SPI_MODE 0
-#define LCD_SPI_CLK_FREQ_HZ 20 * 1000 * 1000 // 20MHz
+#define LCD_SPI_CLK_FREQ_HZ 60 * 1000 * 1000 // 60MHz
 #define TOUCH_SPI_CLK_FREQ_HZ 2 * 1000 * 1000 // 2MHz
 #define LCD_LIGHT_LEVEL 80 
 #define LCD_BK_LIGHT_ON_LEVEL  1

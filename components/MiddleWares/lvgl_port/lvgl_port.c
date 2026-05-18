@@ -17,9 +17,10 @@
 #include "common_types.h"
 #include "custom.h"
 
-#define EXAMPLE_LVGL_TICK_PERIOD_MS 2
-#define EXAMPLE_LVGL_TASK_MIN_DELAY_MS 5
+#define EXAMPLE_LVGL_TICK_PERIOD_MS 1
+#define EXAMPLE_LVGL_TASK_MIN_DELAY_MS 1
 #define EXAMPLE_LVGL_TASK_MAX_DELAY_MS 10
+#define LCD_BUF_HEIGHT_DIVIDER 8
 #define TAG "lvgl_port"
 
 
@@ -38,8 +39,8 @@ static void example_lvgl_port_task(void *arg)
     lv_display_set_default(display);    
     setup_ui(&guider_ui); 
     _lock_release(&lvgl_api_lock);      // 开门放行
-    lv_timer_create(task_OTA_state_monitor, 100, NULL);
-    lv_timer_create(task_HA_state_monitor, 100, NULL);
+    // lv_timer_create(task_OTA_state_monitor, 100, NULL);
+    // lv_timer_create(task_HA_state_monitor, 100, NULL);
     ESP_LOGI(TAG, "Starting ui task");
     while (1) {
         _lock_acquire(&lvgl_api_lock);
@@ -107,7 +108,8 @@ void lvgl_port_init(lvgl_panel_t *panel)
 
     ESP_LOGI(TAG, "Initialize LVGL draw buffers");
     display = lv_display_create(panel->h_res, panel->v_res);
-    size_t draw_buffer_sz = panel->h_res * 20 * sizeof(lv_color16_t);
+    size_t draw_buffer_sz = panel->h_res * (panel->v_res / LCD_BUF_HEIGHT_DIVIDER) * sizeof(lv_color16_t);
+
     void *buf1 = spi_bus_dma_memory_alloc(panel->lcd_host, draw_buffer_sz, 0);
     assert(buf1);
     void *buf2 = spi_bus_dma_memory_alloc(panel->lcd_host, draw_buffer_sz, 0);
