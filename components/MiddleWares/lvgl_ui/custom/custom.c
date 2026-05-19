@@ -181,7 +181,7 @@ void task_OTA_state_monitor(lv_timer_t * timer)
             // util checked
             case OTA_STATE_READY:
                 lv_label_set_text(guider_ui.screen_OTA_label_OTA_state, "Status: Ready to update!");
-                lv_label_set_text_fmt(guider_ui.screen_OTA_label_OTA_info2, "Latest: %s", g_ota_ctx.download_url);
+                lv_label_set_text_fmt(guider_ui.screen_OTA_label_OTA_info2, "Latest: %s", g_ota_ctx.latest_ver);
                 break;
 
             case OTA_STATE_NO_NEW:
@@ -217,7 +217,7 @@ void task_OTA_state_monitor(lv_timer_t * timer)
                 break;
         }
         last_state = g_ota_ctx.state; 
-        lv_label_set_text_fmt(guider_ui.screen_OTA_label_OTA_info1, "Current: %s", g_ota_ctx.latest_ver);
+        lv_label_set_text_fmt(guider_ui.screen_OTA_label_OTA_info1, "Current: %s", g_ota_ctx.current_ver);
     }
 }
 

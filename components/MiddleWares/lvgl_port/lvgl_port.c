@@ -20,7 +20,7 @@
 #define EXAMPLE_LVGL_TICK_PERIOD_MS 1
 #define EXAMPLE_LVGL_TASK_MIN_DELAY_MS 1
 #define EXAMPLE_LVGL_TASK_MAX_DELAY_MS 10
-#define LCD_BUF_HEIGHT_DIVIDER 8
+#define LCD_BUF_HEIGHT_DIVIDER 2
 #define TAG "lvgl_port"
 
 
@@ -108,12 +108,12 @@ void lvgl_port_init(lvgl_panel_t *panel)
 
     ESP_LOGI(TAG, "Initialize LVGL draw buffers");
     display = lv_display_create(panel->h_res, panel->v_res);
-    size_t draw_buffer_sz = panel->h_res * (panel->v_res / LCD_BUF_HEIGHT_DIVIDER) * sizeof(lv_color16_t);
-
-    void *buf1 = spi_bus_dma_memory_alloc(panel->lcd_host, draw_buffer_sz, 0);
+    size_t draw_buffer_sz = panel->h_res * (panel->v_res / 2) * sizeof(lv_color16_t);
+    void *buf1 = heap_caps_aligned_alloc(64, draw_buffer_sz, MALLOC_CAP_SPIRAM | MALLOC_CAP_DMA); // 或者使用片内的方法：spi_bus_dma_memory_alloc
     assert(buf1);
-    void *buf2 = spi_bus_dma_memory_alloc(panel->lcd_host, draw_buffer_sz, 0);
+    void *buf2 = heap_caps_aligned_alloc(64, draw_buffer_sz, MALLOC_CAP_SPIRAM | MALLOC_CAP_DMA);
     assert(buf2);
+
     lv_display_set_buffers(display, buf1, buf2, draw_buffer_sz, LV_DISPLAY_RENDER_MODE_PARTIAL);
 
     ESP_LOGI(TAG, "Install LVGL parameter");
