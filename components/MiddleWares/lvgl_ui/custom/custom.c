@@ -129,14 +129,19 @@ static void HA_button_event_cb(lv_event_t * e)
 
 static void HA_json_to_list(lv_obj_t *list_obj, ha_device_t *devices) 
 {
+
+    if(lv_scr_act() != guider_ui.screen_HA)
+    {
+        ESP_LOGI("HA_Cus","非HA界面");
+        return;
+    }
     // g_HAdevice_ctx.state_ha = HA_STATE_DOWNLOADING;
     // if (!list_obj || !devices) {
     //     g_HAdevice_ctx.state_ha = HA_STATE_FAILED;
     //     ESP_LOGE(TAG, "无效的列表对象或设备数据");
     //     return;
     // }
-
-
+    
     // lv_obj_clean(list_obj); 
     // ESP_LOGI(TAG, "正在将 %d 个设备添加到 UI 列表...", devices->device_count);
 
