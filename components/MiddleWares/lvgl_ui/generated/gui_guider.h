@@ -62,13 +62,20 @@ typedef struct
 	bool screen_HA_del;
 	lv_obj_t *screen_HA_cont_HA_main;
 	lv_obj_t *screen_HA_list_HA_show;
-	lv_obj_t *screen_HA_list_HA_show_item0;
 	lv_obj_t *screen_HA_cont_HA_top;
 	lv_obj_t *screen_HA_btn_HA_check;
 	lv_obj_t *screen_HA_btn_HA_check_label;
 	lv_obj_t *screen_HA_label_HA_main;
 	lv_obj_t *screen_HA_btn_HA_back;
 	lv_obj_t *screen_HA_btn_HA_back_label;
+	lv_obj_t *screen_HA_label_HA_nota;
+	lv_obj_t *screen_HA_cont_HA_select;
+	lv_obj_t *screen_HA_cont_7;
+	lv_obj_t *screen_HA_cont_6;
+	lv_obj_t *screen_HA_cont_rt;
+	lv_obj_t *screen_HA_cont_rm;
+	lv_obj_t *screen_HA_cont_md;
+	lv_obj_t *screen_HA_cont_rd;
 	lv_obj_t *screen_OTA;
 	bool screen_OTA_del;
 	lv_obj_t *screen_OTA_cont_OTA_main;
@@ -127,6 +134,7 @@ LV_IMAGE_DECLARE(_setup_RGB565A8_40x40);
 LV_FONT_DECLARE(lv_font_montserratMedium_16)
 LV_FONT_DECLARE(lv_font_montserratMedium_18)
 LV_FONT_DECLARE(lv_font_montserratMedium_12)
+LV_FONT_DECLARE(lv_font_montserratMedium_22)
 
 
 #ifdef __cplusplus

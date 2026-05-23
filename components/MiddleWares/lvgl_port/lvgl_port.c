@@ -40,7 +40,7 @@ static void example_lvgl_port_task(void *arg)
     setup_ui(&guider_ui); 
     _lock_release(&lvgl_api_lock);      // 开门放行
     lv_timer_create(task_OTA_state_monitor, 100, NULL);
-    // lv_timer_create(task_HA_state_monitor, 100, NULL);
+    lv_timer_create(task_HA_state_monitor, 100, NULL);
     ESP_LOGI(TAG, "Starting ui task");
     while (1) {
         _lock_acquire(&lvgl_api_lock);
@@ -108,10 +108,12 @@ void lvgl_port_init(lvgl_panel_t *panel)
 
     ESP_LOGI(TAG, "Initialize LVGL draw buffers");
     display = lv_display_create(panel->h_res, panel->v_res);
-    size_t draw_buffer_sz = panel->h_res * (panel->v_res / 2) * sizeof(lv_color16_t);
+    size_t draw_buffer_sz = panel->h_res * (panel->v_res / 8) * sizeof(lv_color16_t);
+    // void *buf1 = spi_bus_dma_memory_alloc(SPI2_HOST, draw_buffer_sz, 0); // 或者使用片内的方法：spi_bus_dma_memory_alloc
     void *buf1 = heap_caps_aligned_alloc(64, draw_buffer_sz, MALLOC_CAP_SPIRAM | MALLOC_CAP_DMA); // 或者使用片内的方法：spi_bus_dma_memory_alloc
     assert(buf1);
     void *buf2 = heap_caps_aligned_alloc(64, draw_buffer_sz, MALLOC_CAP_SPIRAM | MALLOC_CAP_DMA);
+    // void *buf2 = spi_bus_dma_memory_alloc(SPI2_HOST,draw_buffer_sz,0);
     assert(buf2);
 
     lv_display_set_buffers(display, buf1, buf2, draw_buffer_sz, LV_DISPLAY_RENDER_MODE_PARTIAL);

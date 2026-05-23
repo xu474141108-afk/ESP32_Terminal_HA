@@ -15,8 +15,7 @@
 #include "freemaster_client.h"
 #endif
 
-#include "OTA.h"
-#include "common_types.h"
+#include "ha_http_control.h"
 
 static void screen_main_cont_setup_event_handler (lv_event_t *e)
 {
@@ -135,6 +134,20 @@ void events_init_screen_wifi (lv_ui *ui)
     lv_obj_add_event_cb(ui->screen_wifi_btn_wifi_back, screen_wifi_btn_wifi_back_event_handler, LV_EVENT_ALL, ui);
 }
 
+static void screen_HA_btn_HA_check_event_handler (lv_event_t *e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    switch (code) {
+    case LV_EVENT_CLICKED:
+    {
+        get_ha_states_to_psram();
+        break;
+    }
+    default:
+        break;
+    }
+}
+
 static void screen_HA_btn_HA_back_event_handler (lv_event_t *e)
 {
     lv_event_code_t code = lv_event_get_code(e);
@@ -149,9 +162,40 @@ static void screen_HA_btn_HA_back_event_handler (lv_event_t *e)
     }
 }
 
+static void screen_HA_cont_md_event_handler (lv_event_t *e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    switch (code) {
+    case LV_EVENT_CLICKED:
+    {
+        
+        break;
+    }
+    default:
+        break;
+    }
+}
+
+static void screen_HA_cont_rd_event_handler (lv_event_t *e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    switch (code) {
+    case LV_EVENT_CLICKED:
+    {
+
+        break;
+    }
+    default:
+        break;
+    }
+}
+
 void events_init_screen_HA (lv_ui *ui)
 {
+    lv_obj_add_event_cb(ui->screen_HA_btn_HA_check, screen_HA_btn_HA_check_event_handler, LV_EVENT_ALL, ui);
     lv_obj_add_event_cb(ui->screen_HA_btn_HA_back, screen_HA_btn_HA_back_event_handler, LV_EVENT_ALL, ui);
+    lv_obj_add_event_cb(ui->screen_HA_cont_md, screen_HA_cont_md_event_handler, LV_EVENT_ALL, ui);
+    lv_obj_add_event_cb(ui->screen_HA_cont_rd, screen_HA_cont_rd_event_handler, LV_EVENT_ALL, ui);
 }
 
 static void screen_OTA_btn_OTA_back_event_handler (lv_event_t *e)
@@ -168,25 +212,9 @@ static void screen_OTA_btn_OTA_back_event_handler (lv_event_t *e)
     }
 }
 
-static void screen_OTA_btn_OTA_download_event_handler (lv_event_t *e)
-{
-    lv_event_code_t code = lv_event_get_code(e);
-    switch (code) {
-    case LV_EVENT_CLICKED:
-    {
-        g_ota_ctx.state = OTA_STATE_DOWNLOADING;
-        xTaskCreate(OTA_download_task, "OTA Download", 4096, NULL, TASK_NIVEL_OTA_DOWNLOAD, NULL);
-        break;
-    }
-    default:
-        break;
-    }
-}
-
 void events_init_screen_OTA (lv_ui *ui)
 {
     lv_obj_add_event_cb(ui->screen_OTA_btn_OTA_back, screen_OTA_btn_OTA_back_event_handler, LV_EVENT_ALL, ui);
-    lv_obj_add_event_cb(ui->screen_OTA_btn_OTA_download, screen_OTA_btn_OTA_download_event_handler, LV_EVENT_ALL, ui);
 }
 
 static void screen_System_btn_System_back_event_handler (lv_event_t *e)

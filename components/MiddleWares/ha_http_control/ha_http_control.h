@@ -8,14 +8,24 @@ extern "C" {
 
 typedef enum {
     HA_STATE_IDLE,          // 空闲
-    HA_STATE_CHECKING,      // 正在检测版本
+    HA_STATE_SEARCHING,      // 正在检测版本
     HA_STATE_HTTP_ERROR,    // HTTP 请求失败
-    HA_STATE_JSON_ERROR,    // HTTP 请求失败
+    HA_STATE_JSON_ERROR,    // JSON 解析失败
     HA_STATE_READY,         // 发现新版本，等待用户确认
-    HA_STATE_DOWNLOADING,   // 正在下载/写入
-    HA_STATE_SUCCESS,       // 更新成功
-    HA_STATE_FAILED        // 更新失败
+    HA_STATE_DOWNLOADING,   // 正在写入LIST
+    HA_STATE_SUCCESS,       // 更新LIST成功
+    HA_STATE_SHOW_CONT,       // 显示设备详情
+    HA_STATE_CLOSE_CONT, // 关闭设备详情
+    HA_STATE_FAILED         // 更新LIST失败
 } ha_state_t;
+
+typedef enum{
+    HA_UI_STATE_IDLE,
+    HA_UI_STATE_ADDED,
+    HA_UI_STATE_UPDATED,
+    HA_UI_STATE_REMOVED,
+    HA_UI_STATE_ERROR
+} ha_ui_state_t;
 
 typedef struct {
     char domain[16];

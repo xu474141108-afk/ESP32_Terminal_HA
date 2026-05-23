@@ -12,7 +12,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "ha_http_control.h"
 #include "gui_guider.h"
 
 void custom_init(lv_ui *ui);
