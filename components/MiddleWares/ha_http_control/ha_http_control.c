@@ -35,7 +35,7 @@ static void init_cjson_hooks() {
 }
 
 void get_ha_states_to_psram() {
-    g_HAdevice_ctx.state_ha = HA_STATE_CHECKING;
+    g_HAdevice_ctx.state_ha = HA_STATE_SEARCHING;
     init_cjson_hooks();
     esp_http_client_config_t config = {
         .url = HA_FIND_STATES_URL,

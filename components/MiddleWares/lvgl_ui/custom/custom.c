@@ -13,7 +13,7 @@
 #define TAG "Custom"
 // HA设备操作界面
 
-static num_btn = 0;
+static uint8_t num_btn = 0;
 
 static void HA_json_to_list(lv_obj_t *list_obj, ha_device_t *devices);
 
