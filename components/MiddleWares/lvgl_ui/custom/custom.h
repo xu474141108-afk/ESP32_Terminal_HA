@@ -13,6 +13,16 @@
 extern "C" {
 #endif
 #include "gui_guider.h"
+#include "ha_http_control.h"
+
+#define MAX_ADDED_DEVICES 4
+
+typedef struct {
+    ha_entity_t cont_rt;
+    ha_entity_t cont_rm;
+    ha_entity_t cont_rd;
+    ha_entity_t cont_md;
+} UI_Main_cout_item_t;
 
 void custom_init(lv_ui *ui);
 //OTA升级界面

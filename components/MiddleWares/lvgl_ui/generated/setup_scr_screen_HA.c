@@ -234,6 +234,7 @@ void setup_scr_screen_HA(lv_ui *ui)
     lv_obj_set_pos(ui->screen_HA_cont_HA_select, 15, 58);
     lv_obj_set_size(ui->screen_HA_cont_HA_select, 290, 160);
     lv_obj_set_scrollbar_mode(ui->screen_HA_cont_HA_select, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_add_flag(ui->screen_HA_cont_HA_select, LV_OBJ_FLAG_HIDDEN);
 
     //Write style for screen_HA_cont_HA_select, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
     lv_obj_set_style_border_width(ui->screen_HA_cont_HA_select, 1, LV_PART_MAIN|LV_STATE_DEFAULT);

@@ -15,6 +15,7 @@
 #include "freemaster_client.h"
 #endif
 
+#include "app_wifi.h"
 #include "ha_http_control.h"
 
 static void screen_main_cont_setup_event_handler (lv_event_t *e)
@@ -115,6 +116,20 @@ void events_init_screen_setup (lv_ui *ui)
     lv_obj_add_event_cb(ui->screen_setup_btn_setup_back, screen_setup_btn_setup_back_event_handler, LV_EVENT_ALL, ui);
 }
 
+static void screen_wifi_btn_wifi_ap_event_handler (lv_event_t *e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    switch (code) {
+    case LV_EVENT_CLICKED:
+    {
+        webserver_begin();
+        break;
+    }
+    default:
+        break;
+    }
+}
+
 static void screen_wifi_btn_wifi_back_event_handler (lv_event_t *e)
 {
     lv_event_code_t code = lv_event_get_code(e);
@@ -131,6 +146,7 @@ static void screen_wifi_btn_wifi_back_event_handler (lv_event_t *e)
 
 void events_init_screen_wifi (lv_ui *ui)
 {
+    lv_obj_add_event_cb(ui->screen_wifi_btn_wifi_ap, screen_wifi_btn_wifi_ap_event_handler, LV_EVENT_ALL, ui);
     lv_obj_add_event_cb(ui->screen_wifi_btn_wifi_back, screen_wifi_btn_wifi_back_event_handler, LV_EVENT_ALL, ui);
 }
 
@@ -155,6 +171,34 @@ static void screen_HA_btn_HA_back_event_handler (lv_event_t *e)
     case LV_EVENT_CLICKED:
     {
         ui_load_scr_animation(&guider_ui, &guider_ui.screen_setup, guider_ui.screen_setup_del, &guider_ui.screen_HA_del, setup_scr_screen_setup, LV_SCR_LOAD_ANIM_OVER_BOTTOM, 200, 200, true, true);
+        break;
+    }
+    default:
+        break;
+    }
+}
+
+static void screen_HA_cont_rt_event_handler (lv_event_t *e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    switch (code) {
+    case LV_EVENT_CLICKED:
+    {
+        g_HAdevice_ctx.state_ha = HA_STATE_CONT_RT;
+        break;
+    }
+    default:
+        break;
+    }
+}
+
+static void screen_HA_cont_rm_event_handler (lv_event_t *e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    switch (code) {
+    case LV_EVENT_CLICKED:
+    {
+        
         break;
     }
     default:
@@ -194,6 +238,8 @@ void events_init_screen_HA (lv_ui *ui)
 {
     lv_obj_add_event_cb(ui->screen_HA_btn_HA_check, screen_HA_btn_HA_check_event_handler, LV_EVENT_ALL, ui);
     lv_obj_add_event_cb(ui->screen_HA_btn_HA_back, screen_HA_btn_HA_back_event_handler, LV_EVENT_ALL, ui);
+    lv_obj_add_event_cb(ui->screen_HA_cont_rt, screen_HA_cont_rt_event_handler, LV_EVENT_ALL, ui);
+    lv_obj_add_event_cb(ui->screen_HA_cont_rm, screen_HA_cont_rm_event_handler, LV_EVENT_ALL, ui);
     lv_obj_add_event_cb(ui->screen_HA_cont_md, screen_HA_cont_md_event_handler, LV_EVENT_ALL, ui);
     lv_obj_add_event_cb(ui->screen_HA_cont_rd, screen_HA_cont_rd_event_handler, LV_EVENT_ALL, ui);
 }
