@@ -168,7 +168,7 @@ static void screen_HA_cont_md_event_handler (lv_event_t *e)
     switch (code) {
     case LV_EVENT_CLICKED:
     {
-        
+
         break;
     }
     default:
