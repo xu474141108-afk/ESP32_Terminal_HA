@@ -31,6 +31,7 @@ void task_OTA_state_monitor(lv_timer_t * timer);
 //HA设备操作界面
 void task_HA_state_monitor(lv_timer_t * timer);
 
+extern UI_Main_cout_item_t g_ui_main_data;
 #ifdef __cplusplus
 }
 #endif

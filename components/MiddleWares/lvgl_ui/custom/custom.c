@@ -12,7 +12,7 @@
 // HA设备操作界面
 
 UI_Main_cout_item_t g_ui_main_data = {0};
-static int index = 0;
+static int g_temp_selecting_index = -1;
 
 static void HA_json_to_list(lv_obj_t *list_obj, ha_device_t *devices);
 
@@ -104,12 +104,10 @@ void task_HA_state_monitor(lv_timer_t * timer){
 
     if (p_target_slot != NULL) {
         ESP_LOGI("FSM", "状态机捕捉到位置状态 [%d]，开始统一盖章...", g_HAdevice_ctx.state_ha);
-        u8_t g_temp_selecting_index = 1;
-
         if (g_temp_selecting_index >= 0) {
             *p_target_slot = g_HAdevice_ctx.entity[g_temp_selecting_index];       
-            ESP_LOGI("FSM", "中转指针中的数据id: [%s]， name:[%s]", p_target_slot->entity_id, p_target_slot->friendly_name);
-            // g_temp_selecting_index = -1; // 擦除临时记事本
+            ESP_LOGI("FSM", "中转指针中的数据id: [%s]， name:[%s],state:[%d]", p_target_slot->entity_id, p_target_slot->friendly_name, p_target_slot->is_on);
+            g_temp_selecting_index = -1; // 擦除临时记事本
         }
 
 
@@ -126,8 +124,7 @@ void task_HA_state_monitor(lv_timer_t * timer){
 static void HA_select_event_show(lv_event_t * e)
 {
     lv_obj_t * obj = lv_event_get_target(e);       
-    int index = (intptr_t)lv_obj_get_user_data(obj);
-
+    g_temp_selecting_index = (intptr_t)lv_obj_get_user_data(obj);
     g_HAdevice_ctx.state_ha = HA_STATE_SHOW_CONT;
 }
 

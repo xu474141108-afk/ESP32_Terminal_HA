@@ -15,8 +15,84 @@
 #include "freemaster_client.h"
 #endif
 
+#include "custom.h"
 #include "app_wifi.h"
 #include "ha_http_control.h"
+#include "esp_log.h"
+
+static void screen_main_event_handler (lv_event_t *e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_ui * ui = (lv_ui *)lv_event_get_user_data(e);
+    switch (code) {
+    case LV_EVENT_SCREEN_LOADED:
+    {
+        lv_label_set_text(ui->screen_main_lab_cont_rt, g_ui_main_data.cont_rt.friendly_name);
+        lv_label_set_text(ui->screen_main_lab_cont_rm, g_ui_main_data.cont_rm.friendly_name);
+        lv_label_set_text(ui->screen_main_lab_cont_rd, g_ui_main_data.cont_rd.friendly_name);
+        lv_label_set_text(ui->screen_main_lab_cont_md, g_ui_main_data.cont_md.friendly_name);
+        break;
+    }
+    default:
+        break;
+    }
+}
+
+static void screen_main_cont_md_event_handler (lv_event_t *e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    switch (code) {
+    case LV_EVENT_CLICKED:
+    {
+        ESP_LOGI("EVENTS","ID: %s Name: %s",g_ui_main_data.cont_md.entity_id,g_ui_main_data.cont_md.friendly_name);
+        break;
+    }
+    default:
+        break;
+    }
+}
+
+static void screen_main_cont_rd_event_handler (lv_event_t *e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    switch (code) {
+    case LV_EVENT_CLICKED:
+    {
+
+        break;
+    }
+    default:
+        break;
+    }
+}
+
+static void screen_main_cont_rm_event_handler (lv_event_t *e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    switch (code) {
+    case LV_EVENT_CLICKED:
+    {
+        ESP_LOGI("EVENTS","ID: %s Name: %s",g_ui_main_data.cont_rm.entity_id,g_ui_main_data.cont_rm.friendly_name);
+        break;
+    }
+    default:
+        break;
+    }
+}
+
+static void screen_main_cont_rt_event_handler (lv_event_t *e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    switch (code) {
+    case LV_EVENT_CLICKED:
+    {
+        ESP_LOGD("EVENTS","ID: s% Name: s%",g_ui_main_data.cont_rt.entity_id,g_ui_main_data.cont_rt.friendly_name);
+        break;
+    }
+    default:
+        break;
+    }
+}
 
 static void screen_main_cont_setup_event_handler (lv_event_t *e)
 {
@@ -34,6 +110,11 @@ static void screen_main_cont_setup_event_handler (lv_event_t *e)
 
 void events_init_screen_main (lv_ui *ui)
 {
+    lv_obj_add_event_cb(ui->screen_main, screen_main_event_handler, LV_EVENT_ALL, ui);
+    lv_obj_add_event_cb(ui->screen_main_cont_md, screen_main_cont_md_event_handler, LV_EVENT_ALL, ui);
+    lv_obj_add_event_cb(ui->screen_main_cont_rd, screen_main_cont_rd_event_handler, LV_EVENT_ALL, ui);
+    lv_obj_add_event_cb(ui->screen_main_cont_rm, screen_main_cont_rm_event_handler, LV_EVENT_ALL, ui);
+    lv_obj_add_event_cb(ui->screen_main_cont_rt, screen_main_cont_rt_event_handler, LV_EVENT_ALL, ui);
     lv_obj_add_event_cb(ui->screen_main_cont_setup, screen_main_cont_setup_event_handler, LV_EVENT_ALL, ui);
 }
 
@@ -198,7 +279,7 @@ static void screen_HA_cont_rm_event_handler (lv_event_t *e)
     switch (code) {
     case LV_EVENT_CLICKED:
     {
-        
+        g_HAdevice_ctx.state_ha = HA_STATE_CONT_RM;
         break;
     }
     default:
@@ -212,7 +293,7 @@ static void screen_HA_cont_md_event_handler (lv_event_t *e)
     switch (code) {
     case LV_EVENT_CLICKED:
     {
-
+        g_HAdevice_ctx.state_ha = HA_STATE_CONT_MD;
         break;
     }
     default:
@@ -226,7 +307,7 @@ static void screen_HA_cont_rd_event_handler (lv_event_t *e)
     switch (code) {
     case LV_EVENT_CLICKED:
     {
-
+        g_HAdevice_ctx.state_ha = HA_STATE_CONT_RD;
         break;
     }
     default:

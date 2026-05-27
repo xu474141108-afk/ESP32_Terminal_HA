@@ -60,6 +60,29 @@ void setup_scr_screen_main(lv_ui *ui)
     lv_obj_set_style_shadow_offset_x(ui->screen_main_cont_md, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_shadow_offset_y(ui->screen_main_cont_md, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
+    //Write codes screen_main_lab_cont_md
+    ui->screen_main_lab_cont_md = lv_label_create(ui->screen_main_cont_md);
+    lv_obj_set_pos(ui->screen_main_lab_cont_md, 20, 6);
+    lv_obj_set_size(ui->screen_main_lab_cont_md, 60, 21);
+    lv_label_set_text(ui->screen_main_lab_cont_md, "\n");
+    lv_label_set_long_mode(ui->screen_main_lab_cont_md, LV_LABEL_LONG_SCROLL_CIRCULAR);
+
+    //Write style for screen_main_lab_cont_md, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_border_width(ui->screen_main_lab_cont_md, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->screen_main_lab_cont_md, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui->screen_main_lab_cont_md, lv_color_hex(0xffffff), LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui->screen_main_lab_cont_md, &lv_font_montserratMedium_16, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui->screen_main_lab_cont_md, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_letter_space(ui->screen_main_lab_cont_md, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_line_space(ui->screen_main_lab_cont_md, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(ui->screen_main_lab_cont_md, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui->screen_main_lab_cont_md, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_top(ui->screen_main_lab_cont_md, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_right(ui->screen_main_lab_cont_md, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_bottom(ui->screen_main_lab_cont_md, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_left(ui->screen_main_lab_cont_md, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_width(ui->screen_main_lab_cont_md, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+
     //Write codes screen_main_cont_rd
     ui->screen_main_cont_rd = lv_obj_create(ui->screen_main);
     lv_obj_set_pos(ui->screen_main_cont_rd, 212, 164);
@@ -88,6 +111,29 @@ void setup_scr_screen_main(lv_ui *ui)
     lv_obj_set_style_shadow_spread(ui->screen_main_cont_rd, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_shadow_offset_x(ui->screen_main_cont_rd, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_shadow_offset_y(ui->screen_main_cont_rd, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_main_lab_cont_rd
+    ui->screen_main_lab_cont_rd = lv_label_create(ui->screen_main_cont_rd);
+    lv_obj_set_pos(ui->screen_main_lab_cont_rd, 20, 6);
+    lv_obj_set_size(ui->screen_main_lab_cont_rd, 60, 21);
+    lv_label_set_text(ui->screen_main_lab_cont_rd, "\n");
+    lv_label_set_long_mode(ui->screen_main_lab_cont_rd, LV_LABEL_LONG_SCROLL_CIRCULAR);
+
+    //Write style for screen_main_lab_cont_rd, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_border_width(ui->screen_main_lab_cont_rd, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->screen_main_lab_cont_rd, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui->screen_main_lab_cont_rd, lv_color_hex(0xffffff), LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui->screen_main_lab_cont_rd, &lv_font_montserratMedium_16, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui->screen_main_lab_cont_rd, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_letter_space(ui->screen_main_lab_cont_rd, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_line_space(ui->screen_main_lab_cont_rd, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(ui->screen_main_lab_cont_rd, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui->screen_main_lab_cont_rd, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_top(ui->screen_main_lab_cont_rd, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_right(ui->screen_main_lab_cont_rd, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_bottom(ui->screen_main_lab_cont_rd, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_left(ui->screen_main_lab_cont_rd, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_width(ui->screen_main_lab_cont_rd, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
     //Write codes screen_main_cont_rm
     ui->screen_main_cont_rm = lv_obj_create(ui->screen_main);
@@ -118,6 +164,29 @@ void setup_scr_screen_main(lv_ui *ui)
     lv_obj_set_style_shadow_offset_x(ui->screen_main_cont_rm, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_shadow_offset_y(ui->screen_main_cont_rm, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
+    //Write codes screen_main_lab_cont_rm
+    ui->screen_main_lab_cont_rm = lv_label_create(ui->screen_main_cont_rm);
+    lv_obj_set_pos(ui->screen_main_lab_cont_rm, 20, 6);
+    lv_obj_set_size(ui->screen_main_lab_cont_rm, 60, 21);
+    lv_label_set_text(ui->screen_main_lab_cont_rm, "");
+    lv_label_set_long_mode(ui->screen_main_lab_cont_rm, LV_LABEL_LONG_SCROLL_CIRCULAR);
+
+    //Write style for screen_main_lab_cont_rm, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_border_width(ui->screen_main_lab_cont_rm, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->screen_main_lab_cont_rm, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui->screen_main_lab_cont_rm, lv_color_hex(0xffffff), LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui->screen_main_lab_cont_rm, &lv_font_montserratMedium_16, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui->screen_main_lab_cont_rm, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_letter_space(ui->screen_main_lab_cont_rm, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_line_space(ui->screen_main_lab_cont_rm, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(ui->screen_main_lab_cont_rm, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui->screen_main_lab_cont_rm, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_top(ui->screen_main_lab_cont_rm, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_right(ui->screen_main_lab_cont_rm, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_bottom(ui->screen_main_lab_cont_rm, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_left(ui->screen_main_lab_cont_rm, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_width(ui->screen_main_lab_cont_rm, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+
     //Write codes screen_main_cont_rt
     ui->screen_main_cont_rt = lv_obj_create(ui->screen_main);
     lv_obj_set_pos(ui->screen_main_cont_rt, 212, 8);
@@ -146,6 +215,29 @@ void setup_scr_screen_main(lv_ui *ui)
     lv_obj_set_style_shadow_spread(ui->screen_main_cont_rt, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_shadow_offset_x(ui->screen_main_cont_rt, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_shadow_offset_y(ui->screen_main_cont_rt, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_main_lab_cont_rt
+    ui->screen_main_lab_cont_rt = lv_label_create(ui->screen_main_cont_rt);
+    lv_obj_set_pos(ui->screen_main_lab_cont_rt, 20, 6);
+    lv_obj_set_size(ui->screen_main_lab_cont_rt, 60, 21);
+    lv_label_set_text(ui->screen_main_lab_cont_rt, "");
+    lv_label_set_long_mode(ui->screen_main_lab_cont_rt, LV_LABEL_LONG_SCROLL_CIRCULAR);
+
+    //Write style for screen_main_lab_cont_rt, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_border_width(ui->screen_main_lab_cont_rt, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->screen_main_lab_cont_rt, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui->screen_main_lab_cont_rt, lv_color_hex(0xffffff), LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui->screen_main_lab_cont_rt, &lv_font_montserratMedium_16, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui->screen_main_lab_cont_rt, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_letter_space(ui->screen_main_lab_cont_rt, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_line_space(ui->screen_main_lab_cont_rt, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(ui->screen_main_lab_cont_rt, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui->screen_main_lab_cont_rt, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_top(ui->screen_main_lab_cont_rt, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_right(ui->screen_main_lab_cont_rt, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_bottom(ui->screen_main_lab_cont_rt, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_left(ui->screen_main_lab_cont_rt, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_width(ui->screen_main_lab_cont_rt, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
     //Write codes screen_main_cont_setup
     ui->screen_main_cont_setup = lv_obj_create(ui->screen_main);

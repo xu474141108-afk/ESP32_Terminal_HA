@@ -22,9 +22,13 @@ typedef struct
 	lv_obj_t *screen_main;
 	bool screen_main_del;
 	lv_obj_t *screen_main_cont_md;
+	lv_obj_t *screen_main_lab_cont_md;
 	lv_obj_t *screen_main_cont_rd;
+	lv_obj_t *screen_main_lab_cont_rd;
 	lv_obj_t *screen_main_cont_rm;
+	lv_obj_t *screen_main_lab_cont_rm;
 	lv_obj_t *screen_main_cont_rt;
+	lv_obj_t *screen_main_lab_cont_rt;
 	lv_obj_t *screen_main_cont_setup;
 	lv_obj_t *screen_main_lab_cont_setup;
 	lv_obj_t *screen_main_img_cont_setup;
