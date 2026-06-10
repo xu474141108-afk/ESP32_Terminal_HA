@@ -213,7 +213,7 @@ void ha_http_control_get_states_to_psram() {
     cJSON *root = cJSON_Parse(buffer);
     if (root && cJSON_IsArray(root)) {
         int array_size = cJSON_GetArraySize(root);
-        ESP_LOGI(TAG, "JSON 解析成功，实体总数: %d", array_size);
+        // ESP_LOGI(TAG, "JSON 解析成功，实体总数: %d", array_size);
         g_HAdevice_ctx.device_count = 0;
 
         for (int i = 0; i < array_size; i++) {

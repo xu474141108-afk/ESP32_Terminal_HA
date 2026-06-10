@@ -8,7 +8,7 @@
 #include "freertos/task.h"
 #include "driver/spi_master.h"
 #include "driver/gpio.h"
-
+#include "esp_timer.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
 #include "esp_lcd_panel_io.h"
