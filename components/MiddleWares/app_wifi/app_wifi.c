@@ -1,4 +1,4 @@
-//WiFi APSTA 基础。实现 AP 模式下开启 Web Server，DNS 劫持与Captive Portal，利用NVS存储配网信息，实现重启后自动连接 STA。
+//WiFi APSTA 基础。实现 AP 模式下开启 Web Server，实现重启后自动连接 STA。
 #include "sdkconfig.h"
 #include "sys/param.h"
 #include "esp_err.h"
@@ -182,6 +182,7 @@ void wifi_init(void)
     }
     ESP_ERROR_CHECK(ret);
     ESP_LOGI(TAG, "结束读nvs");
+
     // 2. 初始化底层网络
     s_wifi_event_group = xEventGroupCreate();
     ESP_ERROR_CHECK(esp_netif_init());
@@ -190,30 +191,35 @@ void wifi_init(void)
     esp_netif_t *sta_netif = esp_netif_create_default_wifi_sta();
     esp_netif_create_default_wifi_ap();
 
-    esp_netif_dhcpc_stop(sta_netif); 
-
-    esp_netif_ip_info_t ip_info;
-    ip_info.ip.addr = esp_ip4addr_aton("192.168.1.132");      // 你想固定的 IP
-    ip_info.gw.addr = esp_ip4addr_aton("192.168.1.1");        // 你的路由器网关
-    ip_info.netmask.addr = esp_ip4addr_aton("255.255.255.0"); // 子网掩码
-
-    ESP_ERROR_CHECK(esp_netif_set_ip_info(sta_netif, &ip_info));
-    ESP_LOGI(TAG, "固定 IP 设置完成: 192.168.1.137");
+    // esp_netif_dhcpc_stop(sta_netif); 
+    // esp_netif_ip_info_t ip_info;
+    // ip_info.ip.addr = esp_ip4addr_aton("192.168.1.132");      // 你想固定的 IP
+    // ip_info.gw.addr = esp_ip4addr_aton("192.168.1.1");        // 你的路由器网关
+    // ip_info.netmask.addr = esp_ip4addr_aton("255.255.255.0"); // 子网掩码
+    // ESP_ERROR_CHECK(esp_netif_set_ip_info(sta_netif, &ip_info));
+    // ESP_LOGI(TAG, "固定 IP 设置完成: 192.168.1.132");
      
+
     ESP_LOGI(TAG, "初始化底层网络成功");
 
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+
     ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &event_handler, NULL, NULL));
     ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &event_handler, NULL, NULL));
     ESP_LOGI(TAG, "事件回调注册成功");
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+
     wifi_config_t wifi_config = {0};
     esp_wifi_get_config(WIFI_IF_STA, &wifi_config);
+
     if (strlen((char*)wifi_config.sta.ssid) > 0) {
         ESP_LOGI(TAG, "NVS中已有WiFi 记录: %s", wifi_config.sta.ssid);
+    }else {
+        ESP_LOGW(TAG, "NVS中无历史 WiFi 记录。");
     }
+
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config) );
     ESP_ERROR_CHECK(esp_wifi_start());  
     ESP_LOGI(TAG, "wifi启动成功");

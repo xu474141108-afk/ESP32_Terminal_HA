@@ -49,7 +49,7 @@ typedef struct {
 extern ha_device_t g_HAdevice_ctx;
 
 void get_ha_states_to_psram(void);
-
+void ha_http_control_get_states_to_psram();
 #ifdef __cplusplus
 }
 #endif

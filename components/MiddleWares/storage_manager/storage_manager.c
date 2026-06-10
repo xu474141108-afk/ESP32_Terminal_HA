@@ -28,7 +28,7 @@ void Write_devices_to_nvs(){
 
 void save_devices_to_nvs(void) {
     nvs_handle_t my_handle;
-   esp_err_t err = nvs_open("ha_store", NVS_READWRITE, &my_handle);
+    esp_err_t err = nvs_open("ha_store", NVS_READWRITE, &my_handle);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "无法打开 NVS 句柄");
         return;

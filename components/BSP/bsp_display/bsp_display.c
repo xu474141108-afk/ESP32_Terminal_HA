@@ -18,6 +18,10 @@
 #include "bsp_ili9488.h"
 #endif
 
+#define TEST_LCD_H_RES  240   // 根据你的屏幕修改横向分辨率
+#define TEST_LCD_V_RES  320   // 根据你的屏幕修改纵向分辨率
+
+
 #define LCD_SPI_MODE 0
 #define LCD_SPI_CLK_FREQ_HZ 60 * 1000 * 1000 // 60MHz
 #define TOUCH_SPI_CLK_FREQ_HZ 2 * 1000 * 1000 // 2MHz
@@ -38,7 +42,7 @@
 #define LCD_DC_GPIO_NUM 42
 #define LCD_CS_GPIO_NUM 1
 #define LCD_RST_GPIO_NUM 2
-#define LCD_BL_GPIO_NUM 11
+#define LCD_BL_GPIO_NUM 10
 
 #define LCD_CLK_GPIO_NUM 40
 #define LCD_MOSI_GPIO_NUM 41
@@ -94,9 +98,10 @@ static void bsp_display_LCD_init(void)
     // bsp_display_bk_init();
 
     gpio_config_t bk_gpio_config = {
-        .mode = GPIO_MODE_OUTPUT,
-        .pin_bit_mask = 1ULL << LCD_BL_GPIO_NUM
-    };
+    .mode = GPIO_MODE_OUTPUT,
+    .pull_up_en = GPIO_PULLUP_ENABLE, // 加上上拉
+    .pin_bit_mask = 1ULL << LCD_BL_GPIO_NUM
+};
     ESP_ERROR_CHECK(gpio_config(&bk_gpio_config));
 
     ESP_LOGI(TAG, "Initialize SPI bus");
@@ -228,3 +233,35 @@ void bsp_display_init(void)
 
 
 
+
+
+// 简单的刷纯色测试函数
+void bsp_lcd_test_clear_screen(uint16_t color_rgb565)
+{
+    ESP_LOGI("LCD_TEST", "开始全屏纯色刷屏测试，颜色代码: 0x%04X", color_rgb565);
+
+    // 1. 申请一行像素大小的临时缓冲区（用 SRAM 即可，确保速度）
+    uint16_t *line_buf = heap_caps_malloc(TEST_LCD_H_RES * sizeof(uint16_t), MALLOC_CAP_8BIT | MALLOC_CAP_DMA);
+    if (line_buf == NULL) {
+        ESP_LOGE("LCD_TEST", "测试缓冲区申请失败！");
+        return;
+    }
+
+    // 2. 将这一行缓冲区填满你指定的颜色
+    // 由于 ESP32 是小端序，高低字节需要对调：如果是 0xF800 (纯红)，转换为大端序发送
+    uint16_t color_swapped = __builtin_bswap16(color_rgb565);
+    for (int i = 0; i < TEST_LCD_H_RES; i++) {
+        line_buf[i] = color_swapped;
+    }
+
+    // 3. 逐行将颜色写入 LCD panel
+    // 逻辑：每次刷一行，循环刷完所有行
+    for (int y = 0; y < TEST_LCD_V_RES; y++) {
+        // 参数含义：面板句柄、起始X、起始Y、结束X+1、结束Y+1、数据指针
+        esp_lcd_panel_draw_bitmap(panel_handle, 0, y, TEST_LCD_H_RES, y + 1, line_buf);
+    }
+
+    // 4. 释放临时动态内存
+    heap_caps_free(line_buf);
+    ESP_LOGI("LCD_TEST", "刷屏测试完成！");
+}
