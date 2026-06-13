@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdbool.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -24,14 +26,6 @@ typedef enum {
     HA_STATE_FAILED         // 更新LIST失败
 } ha_state_t;
 
-// typedef enum{
-//     HA_UI_STATE_IDLE,
-//     HA_UI_STATE_ADDED,
-//     HA_UI_STATE_UPDATED,
-//     HA_UI_STATE_REMOVED,
-//     HA_UI_STATE_ERROR
-// } ha_ui_state_t;
-
 typedef struct {
     char entity_id[64];
     char friendly_name[64];
@@ -43,7 +37,6 @@ typedef struct {
     ha_entity_t entity[MAX_DEVICES];
     int device_count;
 } ha_device_t;
-
 
 
 extern ha_device_t g_HAdevice_ctx;

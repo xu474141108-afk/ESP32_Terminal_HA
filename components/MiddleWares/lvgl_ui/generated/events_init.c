@@ -17,8 +17,9 @@
 
 #include "custom.h"
 #include "app_wifi.h"
-#include "ha_http_control.h"
+#include "ha_http_req.h"
 #include "esp_log.h"
+#include "storage_manager.h"
 
 static void screen_main_event_handler (lv_event_t *e)
 {
@@ -27,6 +28,10 @@ static void screen_main_event_handler (lv_event_t *e)
     switch (code) {
     case LV_EVENT_SCREEN_LOADED:
     {
+        load_ui_sub_item_from_nvs(&g_ui_main_data.cont_rt);
+        load_ui_sub_item_from_nvs(&g_ui_main_data.cont_rm);
+        load_ui_sub_item_from_nvs(&g_ui_main_data.cont_rd);
+        load_ui_sub_item_from_nvs(&g_ui_main_data.cont_md);
         lv_label_set_text(ui->screen_main_lab_cont_rt, g_ui_main_data.cont_rt.friendly_name);
         lv_label_set_text(ui->screen_main_lab_cont_rm, g_ui_main_data.cont_rm.friendly_name);
         lv_label_set_text(ui->screen_main_lab_cont_rd, g_ui_main_data.cont_rd.friendly_name);

@@ -1,47 +1,44 @@
 #include <stdio.h>
 #include "sys.h"
-#include "OTA.h"
+#include "nvs_flash.h"
 //#include "widgets/menu/lv_menu_private.h"
 #define WIFI_CONNECTED_BIT  BIT0
 
 TaskHandle_t xWebTaskHandle = NULL;
 static const char *TAG = "app_main";
 extern EventGroupHandle_t s_wifi_event_group;
-static SemaphoreHandle_t ha_poll_mutex = NULL;
+void nvs_erase_wifi_config(void)
+{   
+    esp_err_t ret;
+    nvs_close(0);
 
-static void ha_poll_task(void *arg)
-{
-    // 互斥锁：防止上一次HTTP没跑完又触发下一次
-    ha_poll_mutex = xSemaphoreCreateMutex();
-    if (!ha_poll_mutex) {
-        ESP_LOGE("ha_poll_task", "Mutex create fail");
-        vTaskDelete(NULL);
-    }
-
-    while (1)
+    // 3. 全盘擦除NVS分区
+    ret = nvs_flash_erase();
+    if(ret != ESP_OK)
     {
-        // 拿到锁才允许执行采集
-        if (xSemaphoreTake(ha_poll_mutex, portMAX_DELAY) == pdTRUE)
-        {
-            ESP_LOGI("ha_poll_task", "Start HA poll cycle");
-            // 调用你现成的HTTP+PSRAM采集函数
-            ha_http_control_get_states_to_psram();
-
-            xSemaphoreGive(ha_poll_mutex);
-        }
-
-        // 固定100ms周期延时
-        vTaskDelay(pdMS_TO_TICKS(100));
+        ESP_LOGE(TAG,"擦除NVS失败:%s",esp_err_to_name(ret));
+        return;
     }
+    ESP_LOGI(TAG,"NVS分区全部擦除完成");
+
+    // 4. 关键：擦完强制重新初始化NVS
+    ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
+    {
+        nvs_flash_erase();
+        ret = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(ret);
 }
 
 
 void app_main(void)
 {
+    storage_init();
+    // nvs_erase_wifi_config(); // 开发阶段清空WiFi配置，正式发布前请注释掉这行代码
     bsp_display_init();
     vTaskDelay(pdMS_TO_TICKS(1000));
     wifi_init();
-    ha_event_group = xEventGroupCreate();
     xEventGroupWaitBits(s_wifi_event_group, 
                        WIFI_CONNECTED_BIT, 
                        pdFALSE,         
@@ -49,8 +46,9 @@ void app_main(void)
                        portMAX_DELAY);   
     ESP_LOGI(TAG, "WiFi 已就绪，");
     vTaskDelay(pdMS_TO_TICKS(2000));
-    xTaskCreate(OTA_autoscan_task, "ota_auto_scan_task", 8192, NULL, TASK_NIVEL_OTA_CHECK, NULL);
-    xTaskCreate(ha_poll_task, "ha_poll_task", 4096, NULL, 5, NULL);
+    // xTaskCreate(OTA_autoscan_task, "ota_auto_scan_task", 8192, NULL, 2, NULL);
+    ota_mqtt_init();
+    // websocket_app_start();
     while (1) {
         vTaskDelay(pdMS_TO_TICKS(8000));
 

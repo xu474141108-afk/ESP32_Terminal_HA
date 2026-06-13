@@ -16,7 +16,6 @@
 #include "nvs_flash.h"
 #include "esp_app_desc.h"
 #include "cJSON.h"
-#include "common_types.h"
 #include "OTA.h"
 
 
@@ -179,7 +178,6 @@ void OTA_download_task(void *pvParameters)
         }
         vTaskDelay(pdMS_TO_TICKS(10));
     }
-
     err = esp_ota_end(update_handle);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "固件校验失败 (OTA End): %s", esp_err_to_name(err));
@@ -188,8 +186,7 @@ void OTA_download_task(void *pvParameters)
         g_ota_ctx.state = OTA_STATE_FAILED;
         vTaskDelete(NULL); 
     }
-
-    // 7. 设置下次启动的分区
+    // 设置下次启动的分区
     err = esp_ota_set_boot_partition(g_ota_ctx.update_partition);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "设置启动分区失败: %s", esp_err_to_name(err));
@@ -214,10 +211,7 @@ static void http_cleanup(esp_http_client_handle_t client)
     }
 }
 
-/**
- * @brief 比较两个版本号
- * @return 1: v1 > v2,    -1: v1 < v2,        0: v1 == v2
- */
+
 static int compare_version(const char *v1, const char *v2) {
     int v1_major, v1_minor, v1_patch;
     int v2_major, v2_minor, v2_patch;

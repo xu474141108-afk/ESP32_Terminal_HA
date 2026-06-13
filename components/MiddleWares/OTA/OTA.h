@@ -38,7 +38,7 @@ extern ota_context_t g_ota_ctx;
 
 void OTA_download_task(void *pvParameters);
 void OTA_autoscan_task(void *pvParameters);
-
+void ota_mqtt_init(void);
 #ifdef __cplusplus
 }
 #endif

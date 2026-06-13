@@ -110,7 +110,7 @@ void setup_scr_screen_wifi(lv_ui *ui)
     lv_obj_set_pos(ui->screen_wifi_label_wifi_state, 120, 30);
     lv_obj_set_size(ui->screen_wifi_label_wifi_state, 180, 22);
     lv_label_set_text(ui->screen_wifi_label_wifi_state, "State:");
-    lv_label_set_long_mode(ui->screen_wifi_label_wifi_state, LV_LABEL_LONG_WRAP);
+    lv_label_set_long_mode(ui->screen_wifi_label_wifi_state, LV_LABEL_LONG_SCROLL_CIRCULAR);
 
     //Write style for screen_wifi_label_wifi_state, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
     lv_obj_set_style_border_width(ui->screen_wifi_label_wifi_state, 1, LV_PART_MAIN|LV_STATE_DEFAULT);
