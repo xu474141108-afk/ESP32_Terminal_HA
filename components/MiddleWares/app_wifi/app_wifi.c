@@ -16,7 +16,7 @@
 #define ESP_WIFI_SSID      "ESP32_AP"
 #define ESP_WIFI_PASS      "12345678"
 #define ESP_WIFI_MAXIMUM_CONNECTIONS 5
-#define MAX_RETRY       100
+#define MAX_RETRY       10
 
 static const char *TAG = "app_wifi";
 wifi_sm_t g_wifi_sm;
@@ -124,6 +124,12 @@ static void stop_webserver() {
 }
 
 void webserver_begin() {
+    wifi_mode_t mode;
+    esp_wifi_get_mode(&mode);
+    if(mode == WIFI_MODE_APSTA) {
+        ESP_LOGI(TAG, "WebServer 已经启动，无需重复启动");
+        return;
+    }
     esp_wifi_set_mode(WIFI_MODE_APSTA);
     esp_wifi_set_config(WIFI_IF_AP, &ap_cfg);
     start_webserver();
@@ -144,6 +150,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,int32_t event_i
         }
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
         if (s_retry_num < MAX_RETRY) {
+            BaseType_t res = xTaskCreate(wifi_retry_backoff_task, "wifi_backoff", 2048, NULL, 3, NULL);
             errt = esp_wifi_connect();
             s_retry_num++;
             ESP_LOGI(TAG, "重试连接路由器...");
@@ -160,6 +167,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,int32_t event_i
         s_retry_num = 0;
         g_wifi_sm.wifi_FSM_state = WIFI_STATE_CONNECTED;
         xQueueSend(g_ui_status_queue, &g_wifi_sm.wifi_FSM_state, 0);
+        
         // 如果是从 APSTA 模式连接成功的，则切回 STA 并关闭 WebServer
         wifi_mode_t mode;
         esp_wifi_get_mode(&mode);
