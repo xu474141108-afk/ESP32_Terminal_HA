@@ -10,17 +10,17 @@ extern "C" {
 
 
 typedef enum {
-    OTA_STATE_IDLE,          // 空闲
-    OTA_STATE_OTA_SCREEN,    // 正在检测版本
-    OTA_STATE_CHECKING,      // 正在检测版本
-    OTA_STATE_HTTP_ERROR,    // HTTP 请求失败
-    OTA_STATE_READY,         // 发现新版本，等待用户确认
-    OTA_STATE_NO_NEW,        // 已经是最新版本
-    OTA_STATE_DOWNLOADING,   // 正在下载/写入
-    OTA_STATE_INSTALLING,    // 正在校验/安装
-    OTA_STATE_SUCCESS,       // 更新成功
-    OTA_STATE_FAILED,        // 更新失败
-    OTA_STATE_LEN_NOFIT      // 接收数据长度不匹配
+    OTA_STATE_IDLE,          // Idle state
+    OTA_STATE_OTA_SCREEN,    // OTA page displayed
+    OTA_STATE_CHECKING,      // Checking firmware version
+    OTA_STATE_HTTP_ERROR,    // HTTP request failed
+    OTA_STATE_READY,         // New version found, waiting for user confirmation
+    OTA_STATE_NO_NEW,        // Already the latest version
+    OTA_STATE_DOWNLOADING,   // Downloading & writing firmware
+    OTA_STATE_INSTALLING,    // Verifying and installing firmware
+    OTA_STATE_SUCCESS,       // OTA update succeeded
+    OTA_STATE_FAILED,        // OTA update failed
+    OTA_STATE_LEN_NOFIT      // Mismatch of received data length
 } ota_state_t;
 
 typedef struct {

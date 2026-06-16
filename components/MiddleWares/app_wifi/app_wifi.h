@@ -20,9 +20,8 @@ typedef enum {
 
 typedef struct {
     wifi_state_t wifi_FSM_state;
-    int retry_progress;      // 重连进度（例如当前是第几次 1/5）
-    char connected_ip[16];   // 连上后获取到的 IP 地址
-    char ap_ssid[32];        // 自身发射热点的名称（供扫码/手动连）
+    char wifi_ip[16];   // 连上后获取到的 IP 地址
+    char wifi_ssid[32];        // 自身发射热点的名称（供扫码/手动连）
 } wifi_sm_t;
 
 extern wifi_sm_t g_wifi_sm;

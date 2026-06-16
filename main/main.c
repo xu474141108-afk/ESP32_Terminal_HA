@@ -39,16 +39,15 @@ void app_main(void)
     bsp_display_init();
     vTaskDelay(pdMS_TO_TICKS(1000));
     wifi_init();
-    xEventGroupWaitBits(s_wifi_event_group, 
-                       WIFI_CONNECTED_BIT, 
-                       pdFALSE,         
-                       pdTRUE,           
-                       portMAX_DELAY);   
-    ESP_LOGI(TAG, "WiFi 已就绪，");
+    // xEventGroupWaitBits(s_wifi_event_group, 
+    //                    WIFI_CONNECTED_BIT, 
+    //                    pdFALSE,         
+    //                    pdTRUE,           
+    //                    portMAX_DELAY);   
+    // ESP_LOGI(TAG, "WiFi 已就绪，");
     vTaskDelay(pdMS_TO_TICKS(2000));
-    // xTaskCreate(OTA_autoscan_task, "ota_auto_scan_task", 8192, NULL, 2, NULL);
     ota_mqtt_init();
-    // websocket_app_start();
+    websocket_app_start();
     while (1) {
         vTaskDelay(pdMS_TO_TICKS(8000));
 

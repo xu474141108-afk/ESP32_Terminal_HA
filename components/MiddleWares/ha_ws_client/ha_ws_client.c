@@ -71,8 +71,7 @@ static void websocket_event_handler(void *handler_args, esp_event_base_t base, i
                 }
             }         
         break;
-
-            
+          
         case WEBSOCKET_EVENT_DISCONNECTED:
             ESP_LOGW(TAG, "WebSocket 已断开连接,释放接收缓冲区");
             if (ws_rx_buffer) { free(ws_rx_buffer); ws_rx_buffer = NULL; }

@@ -17,8 +17,6 @@ UI_Main_cout_item_t g_ui_main_data = {0};
 static int g_temp_selecting_index = -1;
 
 static void HA_json_to_list(lv_obj_t *list_obj, ha_device_t *devices);
-static void show_wifi_config_tips_ui(void);
-static void wifi_msgbox_event_cb(lv_event_t *e);
 static void HA_select_event_show(lv_event_t * e);
 
 
@@ -129,7 +127,6 @@ static void HA_select_event_show(lv_event_t * e)
 }
 
 static void HA_json_to_list(lv_obj_t *list_obj, ha_device_t *devices) {
-
     if(lv_scr_act() != guider_ui.screen_HA)
     {
         ESP_LOGI(TAG,"非HA界面");
@@ -226,89 +223,57 @@ void custom_init(lv_ui *ui)
     /* Add your codes here */
 }
 
-
-
-// typedef enum {
-//     WIFI_STATE_IDLE,
-//     WIFI_STATE_NONVS_CONFIG,
-//     WIFI_STATE_STA_CONNECTING,
-//     WIFI_STATE_STA_RECONNECTING,
-//     WIFI_STATE_WAIT_PROVISIONING, 
-//     WIFI_STATE_PROVISIONING,
-//     WIFI_STATE_CONNECTED,
-//     WIFI_STATE_DISCONNECTED
-// } wifi_state_t;
-
-
 void task_WIFI_state_monitor(lv_timer_t * timer){
     if(lv_scr_act() != guider_ui.screen_wifi)
     {
         return;
     }
-    uint8_t received_state;
+    wifi_sm_t received_state;
     if (xQueueReceive(g_ui_status_queue, &received_state, 0) == pdTRUE) {
-        switch (received_state){
+        const char *s_state = "State: Unknown";
+        char buf_ssid[48] = "SSID: ";
+        char buf_ip[48] = "IP: ";
+        switch (received_state.wifi_FSM_state){
             case WIFI_STATE_IDLE:
                 ESP_LOGI(TAG, "WiFi状态: 空闲");
-                lv_label_set_text(guider_ui.screen_wifi_label_wifi_state, "State: Checking");
+                s_state = "State: Checking"; 
                 break;
 
             case WIFI_STATE_NONVS_CONFIG:
                 ESP_LOGI(TAG, "WiFi状态: 未配置");
-                lv_label_set_text(guider_ui.screen_wifi_label_wifi_state, "State: No WiFi Config");
+                s_state = "State: No WiFi Config";
                 break;
-
             case WIFI_STATE_STA_CONNECTING: 
                 ESP_LOGI(TAG, "WiFi状态: 连接中");
-                lv_label_set_text(guider_ui.screen_wifi_label_wifi_state, "State: Connecting");
+                s_state = "State: Connecting";
                 break;
             case WIFI_STATE_PROVISIONING:
                 ESP_LOGI(TAG, "WiFi状态: 配网中");
-                lv_label_set_text(guider_ui.screen_wifi_label_wifi_state, "State: Provisioning");
+                s_state = "State: Provisioning";
+                snprintf(buf_ssid, sizeof(buf_ssid), "SSID: ESP32_AP");
+                snprintf(buf_ip, sizeof(buf_ip), "Password: 12345678");
                 break;
             case WIFI_STATE_WAIT_BEGIN_PROVISIONING:
                 ESP_LOGI(TAG, "WiFi状态: 等待配网开始");
-                lv_label_set_text(guider_ui.screen_wifi_label_wifi_state, "State: No WiFi Config now, waiting for provisioning");
+                s_state = "State: No WiFi Config now, waiting for provisioning";
                 break;
             case WIFI_STATE_CONNECTED:
                 ESP_LOGI(TAG, "WiFi状态: 已连接");
-                lv_label_set_text(guider_ui.screen_wifi_label_wifi_state, "State: Connected");
+                s_state = "State: Connected";
+                snprintf(buf_ssid, sizeof(buf_ssid), "SSID: %s", received_state.wifi_ssid);
+                snprintf(buf_ip, sizeof(buf_ip), "IP: %s", received_state.wifi_ip);
                 break;
             case WIFI_STATE_DISCONNECTED:
                 ESP_LOGI(TAG, "WiFi状态: 已断开");
-                lv_label_set_text(guider_ui.screen_wifi_label_wifi_state, "State: Disconnected");
+                s_state = "State: Disconnected";
                 break;
-
             default:
-                ESP_LOGE(TAG, "未知状态");
+                ESP_LOGE(TAG, "未知状态 %d", received_state.wifi_FSM_state);
                 break;
         }     
+        lv_label_set_text(guider_ui.screen_wifi_label_wifi_state, s_state);
+        lv_label_set_text(guider_ui.screen_wifi_label_wifi_info1, buf_ssid);
+        lv_label_set_text(guider_ui.screen_wifi_label_wifi_info2, buf_ip);
     }  
 }
 
-
-static void show_wifi_config_tips_ui(void)
-{
-    lv_obj_t *msg_box = lv_msgbox_create(lv_screen_active());
-    if (!msg_box) return;
-    ESP_LOGI(TAG, "提示用户进行WiFi配置");
-    lv_msgbox_add_title(msg_box, "Nota");
-    lv_msgbox_add_text(msg_box, "No WiFi Configuration\nPlease configure WiFi first");
-    lv_obj_t *btn_ok = lv_msgbox_add_footer_button(msg_box, "Sure");
-    
-    lv_obj_set_width(msg_box, 300);
-    lv_obj_center(msg_box);
-
-    lv_obj_add_event_cb(btn_ok, wifi_msgbox_event_cb, LV_EVENT_CLICKED, msg_box);
-}
-
-static void wifi_msgbox_event_cb(lv_event_t *e)
-{
-    lv_obj_t *msg_box = (lv_obj_t *)lv_event_get_user_data(e);
-
-    g_wifi_sm.wifi_FSM_state = WIFI_STATE_IDLE;
-    ESP_LOGI(TAG, "用户点击确定，进入空闲状态");
-    if (msg_box) {
-        lv_msgbox_close(msg_box);
-    }
-}

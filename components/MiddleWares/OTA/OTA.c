@@ -94,12 +94,14 @@ static void OTA_version_check_task(void *pvParameters)
             if (compare_version(g_ota_ctx.latest_ver, g_ota_ctx.current_ver) > 0) {
                 strncpy(g_ota_ctx.download_url, url->valuestring, sizeof(g_ota_ctx.download_url));
                 g_ota_ctx.state = OTA_STATE_READY; 
-                ESP_LOGI(TAG, "发现新版本,现版本: %s，最新版本: %s", g_ota_ctx.current_ver, g_ota_ctx.latest_ver);
+                ESP_LOGI(TAG, "Find new version, current version: %s, latest version: %s",\
+                     g_ota_ctx.current_ver, g_ota_ctx.latest_ver);
                 
             } else
             {
                 g_ota_ctx.state = OTA_STATE_NO_NEW;
-                ESP_LOGI(TAG, "已是最新版本,现版本: %s, 最新版本: %s", g_ota_ctx.current_ver, g_ota_ctx.latest_ver);
+                ESP_LOGI(TAG, "Already the latest version, current version: %s, latest version: %s",\
+                     g_ota_ctx.current_ver, g_ota_ctx.latest_ver);
             }
         }
         cJSON_Delete(root);

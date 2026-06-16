@@ -38,7 +38,6 @@ esp_err_t save_ui_sub_item_to_nvs(const ha_entity_t *p_slot)
         ESP_LOGE(TAG, "错误：传入的指针不属于 g_ui_main_data 的任何有效成员！");
         return ESP_ERR_INVALID_ARG;
     }
-
     nvs_handle_t my_handle;
     esp_err_t err = nvs_open(NVS_STORAGE_NAMESPACE, NVS_READWRITE, &my_handle);
     if (err != ESP_OK) return err;
@@ -78,6 +77,31 @@ esp_err_t load_ui_sub_item_from_nvs(ha_entity_t *p_slot)
         ESP_LOGW(TAG, "NVS 中未找到键 %s 的数据，保持默认值", nvs_key);
     } else {
         err = ESP_ERR_NVS_INVALID_LENGTH;
+    }
+
+    nvs_close(my_handle);
+    return err;
+}
+
+esp_err_t nvs_save_ha_token_to_nvs(char  *p_slot) 
+{
+    if (p_slot == NULL) return ESP_ERR_INVALID_ARG;
+
+    // 1. 自动寻找 Key
+    const char *nvs_key = get_nvs_key_by_pointer(p_slot);
+    if (nvs_key == NULL) {
+        ESP_LOGE(TAG, "错误：传入的指针不属于 g_ui_main_data 的任何有效成员！");
+        return ESP_ERR_INVALID_ARG;
+    }
+    nvs_handle_t my_handle;
+    esp_err_t err = nvs_open(NVS_STORAGE_NAMESPACE, NVS_READWRITE, &my_handle);
+    if (err != ESP_OK) return err;
+
+    // 2. 写入数据
+    err = nvs_set_blob(my_handle, nvs_key, p_slot, sizeof(ha_entity_t));
+    if (err == ESP_OK) {
+        err = nvs_commit(my_handle);
+        ESP_LOGI(TAG, "成功保存数据到 NVS 键: %s", nvs_key);
     }
 
     nvs_close(my_handle);

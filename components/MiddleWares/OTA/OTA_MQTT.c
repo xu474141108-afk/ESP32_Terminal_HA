@@ -24,8 +24,8 @@
 #define HW_PASSWORD         "6b71a8896b7966c8215cd3bc0a0d2aad70becfdcd24ddef030bf379ae1dc6c83"
 #define HUAWEI_BASE_DEVICE_ID "6a2db2637ce3a4387e2d5e3c_ESP32_HA_TERMINAL_TEST_01"
 
-#define MQTT_TOPIC_EVENTS_UP   "$oc/devices/" HUAWEI_BASE_DEVICE_ID "/sys/events/up"   // 设备上报（版本/进度）
-#define MQTT_TOPIC_EVENTS_DOWN "$oc/devices/" HUAWEI_BASE_DEVICE_ID "/sys/events/down" // 平台下发（升级通知）
+#define MQTT_TOPIC_EVENTS_UP   "$oc/devices/" HUAWEI_BASE_DEVICE_ID "/sys/events/up"   // Device Publish to Platform 
+#define MQTT_TOPIC_EVENTS_DOWN "$oc/devices/" HUAWEI_BASE_DEVICE_ID "/sys/events/down" // Platform Publish to Device 
     
 
 static esp_mqtt_client_handle_t global_mqtt_client = NULL; 
@@ -42,7 +42,7 @@ static void http_cleanup(esp_http_client_handle_t client)
     }
 }
 
-static void mqtt_report_progress(int percentage, int status_type, int error_code, const char* desc){
+static void ota_mqtt_report_progress(int percentage, int status_type, int error_code, const char* desc){
     if (global_mqtt_client == NULL) return;
     
     cJSON *root = cJSON_CreateObject();
@@ -81,7 +81,7 @@ static void mqtt_report_progress(int percentage, int status_type, int error_code
 }
 
 
-static void OTA_mqtt_download_task(void *pvParameters)
+static void ota_mqtt_download_task(void *pvParameters)
 {
     char *task_param = (char *)pvParameters;
     char *url_ptr = NULL;
@@ -203,8 +203,7 @@ static void OTA_mqtt_download_task(void *pvParameters)
     esp_restart(); 
 }
 
-
-static void mqtt_report_version_generic(esp_mqtt_client_handle_t client, const char* version)
+static void ota_mqtt_report_version_generic(esp_mqtt_client_handle_t client, const char* version)
 {
     char ver_buf[64];
     if (*version != 'v' && *version != 'V') {
@@ -232,16 +231,12 @@ static void mqtt_report_version_generic(esp_mqtt_client_handle_t client, const c
     char *json_str = cJSON_PrintUnformatted(root);
     if (json_str) {
         esp_mqtt_client_publish(client, MQTT_TOPIC_EVENTS_UP, json_str, 0, 1, 0);
-        ESP_LOGI(TAG, "端到服务器上报版本: %s", ver_buf);
         free(json_str);
     }
     cJSON_Delete(root);
 }
 
-/**
- * 解析并自动应答华为云物模型事件
- */
-static void process_ota_json(const char *json_str)
+static void ota_json_process(const char *json_str)
 {
     cJSON *root = cJSON_Parse(json_str);
     if (root == NULL) return;
@@ -252,16 +247,16 @@ static void process_ota_json(const char *json_str)
         if (service_item) {
             cJSON *event_type = cJSON_GetObjectItem(service_item, "event_type");
             if (cJSON_IsString(event_type)) {
-                // 1. 处理平台下发的 "version_query" 指令
+                // process "version_query" 
                 if (strcmp(event_type->valuestring, "version_query") == 0) {
-                    ESP_LOGI(TAG, "收到华为云 version_query 指令，触发应答机制...");
+                    ESP_LOGI(TAG, "Recieved version_query");
                     const esp_app_desc_t *app_desc = esp_app_get_description();
                     if (global_mqtt_client) {
                         mqtt_report_version_generic(global_mqtt_client, app_desc->version);
                     }
                 }
                 
-                // 2. 处理平台下发的 "firmware_upgrade" 升级包
+                //process "firmware_upgrade" 
                 else if (strcmp(event_type->valuestring, "firmware_upgrade") == 0) {
                     cJSON *paras = cJSON_GetObjectItemCaseSensitive(service_item, "paras");
                     if (paras) {
@@ -270,8 +265,7 @@ static void process_ota_json(const char *json_str)
                         cJSON *token = cJSON_GetObjectItem(paras, "access_token"); 
 
                         if (cJSON_IsString(ver) && cJSON_IsString(url)) {
-                            ESP_LOGI(TAG, "📥 收到华为云升级指令！目标新版本: %s", ver->valuestring);
-                                // 动态分配大缓冲区，用 '|' 拼接 URL 和 Token 传递给任务头
+                            ESP_LOGI(TAG, "Recieved firmware_upgrade, version: %s", ver->valuestring);
                                 char *task_param = malloc(1024);
                                 if (task_param != NULL) {
                                     memset(task_param, 0, 1024);
@@ -281,15 +275,14 @@ static void process_ota_json(const char *json_str)
                                         snprintf(task_param, 1024, "%s|", url->valuestring);
                                     }
                                     
-                                    ESP_LOGI(TAG, "🚀 成功打包鉴权参数，正在拉起独立固件下载任务...");
-                                    BaseType_t res = xTaskCreate(OTA_mqtt_download_task, "ota_download", 1024 * 8, (void*)task_param,3, NULL);
+                                    BaseType_t res = xTaskCreate(ota_mqtt_download_task, "ota_download", 1024 * 8, (void*)task_param,3, NULL);
                                     
                                     if (res != pdPASS) {
-                                        ESP_LOGE(TAG, "无法创建 OTA 下载任务！");
+                                        ESP_LOGE(TAG, "Failed to create OTA download task!");
                                         free(task_param);
                                     }
                                 } else {
-                                    ESP_LOGE(TAG, "堆内存不足，无法分配下载链接缓冲区！");
+                                    ESP_LOGE(TAG, "Insufficient heap memory, failed to allocate download link buffer!");
                                 }
                         }
                     }
@@ -300,10 +293,7 @@ static void process_ota_json(const char *json_str)
     cJSON_Delete(root);
 }
 
-/**
- * MQTT 事件监听回调
- */
-static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data)
+static void ota_mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data)
 {
     esp_mqtt_event_handle_t event = event_data;
     esp_mqtt_client_handle_t client = event->client;
@@ -311,12 +301,12 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     switch ((esp_mqtt_event_id_t)event_id) {
         case MQTT_EVENT_CONNECTED:
             global_mqtt_client = client; 
-            ESP_LOGI(TAG, "成功接入华为云物联网平台！");
+            ESP_LOGI(TAG, "Connected to Huawei Cloud IoTDA MQTT broker");
             esp_mqtt_client_subscribe(client, MQTT_TOPIC_EVENTS_DOWN, 1);
             break;
 
         case MQTT_EVENT_DISCONNECTED:
-            ESP_LOGW(TAG, "与华为云断开连接");
+            ESP_LOGW(TAG, "Disconnected from Huawei Cloud IoTDA MQTT broker");
             break;
 
         case MQTT_EVENT_DATA:
@@ -324,7 +314,7 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
                 int copy_len = (event->data_len < BUFFSIZE) ? event->data_len : BUFFSIZE;
                 memcpy(ota_write_data, event->data, copy_len);
                 ota_write_data[copy_len] = '\0'; 
-                process_ota_json(ota_write_data);
+                ota_json_process(ota_write_data);
             }
             break;
 
@@ -348,7 +338,7 @@ void ota_mqtt_init(void)
     };
 
     esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
-    esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, NULL);
+    esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, ota_mqtt_event_handler, NULL);
     esp_mqtt_client_start(client);
 }
 

@@ -51,6 +51,7 @@ typedef struct
 	lv_obj_t *screen_setup_btn_setup_back_label;
 	lv_obj_t *screen_wifi;
 	bool screen_wifi_del;
+	lv_obj_t *screen_wifi_qrcode_wifi_ap;
 	lv_obj_t *screen_wifi_cont_wifi_main;
 	lv_obj_t *screen_wifi_animimg_wifi;
 	lv_obj_t *screen_wifi_label_wifi_info2;
@@ -63,6 +64,7 @@ typedef struct
 	lv_obj_t *screen_wifi_btn_wifi_back;
 	lv_obj_t *screen_wifi_btn_wifi_back_label;
 	lv_obj_t *screen_HA;
+
 	bool screen_HA_del;
 	lv_obj_t *screen_HA_cont_HA_main;
 	lv_obj_t *screen_HA_list_HA_show;

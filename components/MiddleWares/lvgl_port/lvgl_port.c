@@ -82,6 +82,7 @@ static void example_lvgl_touch_cb(lv_indev_t *indev, lv_indev_data_t *data)
     esp_lcd_touch_read_data(touch_pad);
     /* Get coordinates */
     bool touchpad_pressed = esp_lcd_touch_get_coordinates(touch_pad, touchpad_x, touchpad_y, NULL, &touchpad_cnt, 1);
+    // esp_lcd_touch_clear_data(touch_pad);
     
     //ESP_LOGI("TOUCH_DEBUG", "Pressed: %d, Count: %u", (int)touchpad_pressed, touchpad_cnt);
     if (touchpad_pressed && touchpad_cnt > 0) {

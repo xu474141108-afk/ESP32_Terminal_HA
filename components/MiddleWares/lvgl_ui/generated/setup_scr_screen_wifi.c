@@ -52,6 +52,8 @@ void setup_scr_screen_wifi(lv_ui *ui)
     lv_animimg_set_duration(ui->screen_wifi_animimg_wifi, 30*0);
     lv_animimg_set_repeat_count(ui->screen_wifi_animimg_wifi, LV_ANIM_REPEAT_INFINITE);
     lv_image_set_src(ui->screen_wifi_animimg_wifi, screen_wifi_animimg_wifi_imgs[0]);
+    
+
 
     //Write codes screen_wifi_label_wifi_info2
     ui->screen_wifi_label_wifi_info2 = lv_label_create(ui->screen_wifi_cont_wifi_main);
@@ -84,7 +86,7 @@ void setup_scr_screen_wifi(lv_ui *ui)
     lv_obj_set_pos(ui->screen_wifi_label_wifi_info1, 120, 70);
     lv_obj_set_size(ui->screen_wifi_label_wifi_info1, 180, 22);
     lv_label_set_text(ui->screen_wifi_label_wifi_info1, "Inform:");
-    lv_label_set_long_mode(ui->screen_wifi_label_wifi_info1, LV_LABEL_LONG_WRAP);
+    lv_label_set_long_mode(ui->screen_wifi_label_wifi_info1, LV_LABEL_LONG_SCROLL);
 
     //Write style for screen_wifi_label_wifi_info1, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
     lv_obj_set_style_border_width(ui->screen_wifi_label_wifi_info1, 1, LV_PART_MAIN|LV_STATE_DEFAULT);
@@ -110,7 +112,7 @@ void setup_scr_screen_wifi(lv_ui *ui)
     lv_obj_set_pos(ui->screen_wifi_label_wifi_state, 120, 30);
     lv_obj_set_size(ui->screen_wifi_label_wifi_state, 180, 22);
     lv_label_set_text(ui->screen_wifi_label_wifi_state, "State:");
-    lv_label_set_long_mode(ui->screen_wifi_label_wifi_state, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    lv_label_set_long_mode(ui->screen_wifi_label_wifi_state, LV_LABEL_LONG_SCROLL);
 
     //Write style for screen_wifi_label_wifi_state, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
     lv_obj_set_style_border_width(ui->screen_wifi_label_wifi_state, 1, LV_PART_MAIN|LV_STATE_DEFAULT);
@@ -130,6 +132,17 @@ void setup_scr_screen_wifi(lv_ui *ui)
     lv_obj_set_style_pad_bottom(ui->screen_wifi_label_wifi_state, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_pad_left(ui->screen_wifi_label_wifi_state, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_shadow_width(ui->screen_wifi_label_wifi_state, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+
+    //Write codes screen_wifi_qrcode_wifi_ap
+    ui->screen_wifi_qrcode_wifi_ap = lv_qrcode_create(ui->screen_wifi_cont_wifi_main);
+    lv_obj_set_pos(ui->screen_wifi_qrcode_wifi_ap, 12, 31);
+    lv_obj_set_size(ui->screen_wifi_qrcode_wifi_ap, 100, 100);
+    lv_qrcode_set_size(ui->screen_wifi_qrcode_wifi_ap, 100);
+    lv_qrcode_set_dark_color(ui->screen_wifi_qrcode_wifi_ap, lv_color_hex(0x000000));
+    lv_qrcode_set_light_color(ui->screen_wifi_qrcode_wifi_ap, lv_color_hex(0xffffff));
+    const char * screen_wifi_qrcode_wifi_ap_data = "http://192.168.4.1";
+    lv_qrcode_update(ui->screen_wifi_qrcode_wifi_ap, screen_wifi_qrcode_wifi_ap_data, 18);
 
     //Write codes screen_wifi_cont_wifi_top
     ui->screen_wifi_cont_wifi_top = lv_obj_create(ui->screen_wifi);
@@ -154,7 +167,7 @@ void setup_scr_screen_wifi(lv_ui *ui)
     lv_obj_set_pos(ui->screen_wifi_btn_wifi_ap, 120, 5);
     lv_obj_set_size(ui->screen_wifi_btn_wifi_ap, 180, 30);
     ui->screen_wifi_btn_wifi_ap_label = lv_label_create(ui->screen_wifi_btn_wifi_ap);
-    lv_label_set_text(ui->screen_wifi_btn_wifi_ap_label, "AP Starting");
+    lv_label_set_text(ui->screen_wifi_btn_wifi_ap_label, "AP MODE");
     lv_label_set_long_mode(ui->screen_wifi_btn_wifi_ap_label, LV_LABEL_LONG_WRAP);
     lv_obj_align(ui->screen_wifi_btn_wifi_ap_label, LV_ALIGN_CENTER, 0, 0);
     lv_obj_set_style_pad_all(ui->screen_wifi_btn_wifi_ap, 0, LV_STATE_DEFAULT);
@@ -223,6 +236,7 @@ void setup_scr_screen_wifi(lv_ui *ui)
     lv_obj_set_style_text_font(ui->screen_wifi_btn_wifi_back, &lv_font_montserratMedium_16, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui->screen_wifi_btn_wifi_back, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_align(ui->screen_wifi_btn_wifi_back, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
+
 
     //The custom code of screen_wifi.
 
