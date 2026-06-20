@@ -25,19 +25,12 @@ typedef enum {
 
 typedef struct {
     ota_state_t state;
-    const esp_partition_t *update_partition;
-    int data_read;
-    char download_url[256];
     char current_ver[32]; 
     char latest_ver[32];
 } ota_context_t;
-
-
-
 extern ota_context_t g_ota_ctx;
 
-void OTA_download_task(void *pvParameters);
-void OTA_autoscan_task(void *pvParameters);
+void ota_mqtt_init(void);
 #ifdef __cplusplus
 }
 #endif

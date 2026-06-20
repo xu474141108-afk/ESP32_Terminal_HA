@@ -169,7 +169,7 @@ void task_OTA_state_monitor(lv_timer_t * timer)
         switch (g_ota_ctx.state)
         {
             case OTA_STATE_IDLE:
-                lv_label_set_text(guider_ui.screen_OTA_label_OTA_state, "Status: Ready to update!");
+                lv_label_set_text(guider_ui.screen_OTA_label_OTA_state, "Status: IDLE");
                 break;
 
             case OTA_STATE_CHECKING: 

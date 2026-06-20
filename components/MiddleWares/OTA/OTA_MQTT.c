@@ -31,6 +31,13 @@
 static esp_mqtt_client_handle_t global_mqtt_client = NULL; 
 static char target_upgrade_version[64] = "2.0.0"; 
 static char ota_write_data[BUFFSIZE + 1] = { 0 };
+static const esp_partition_t *update_partition;
+
+ota_context_t g_ota_ctx = {
+    .state = OTA_STATE_IDLE,
+    .current_ver = "1.1.1",
+    .latest_ver = {0} 
+};
 
 
 static void http_cleanup(esp_http_client_handle_t client)
@@ -42,45 +49,6 @@ static void http_cleanup(esp_http_client_handle_t client)
     }
 }
 
-static void ota_mqtt_report_progress(int percentage, int status_type, int error_code, const char* desc){
-    if (global_mqtt_client == NULL) return;
-    
-    cJSON *root = cJSON_CreateObject();
-    cJSON_AddStringToObject(root, "object_device_id", HUAWEI_BASE_DEVICE_ID); 
-    
-    cJSON *services = cJSON_CreateArray();
-    cJSON *service_item = cJSON_CreateObject();
-    cJSON_AddStringToObject(service_item, "service_id", "$ota");
-    cJSON_AddStringToObject(service_item, "event_type", "upgrade_progress_report"); 
-    
-    cJSON *paras = cJSON_CreateObject();
-    cJSON_AddNumberToObject(paras, "progress", percentage);     
-    cJSON_AddStringToObject(paras, "version", target_upgrade_version); // 必须是平台期望的目标新版本号
-    
-    // 根据状态动态组装符合官方定义的 JSON
-    if (status_type == 1) {
-        cJSON_AddNumberToObject(paras, "result_code", 0); // 成功
-    } else if (status_type == 2) {
-        cJSON_AddNumberToObject(paras, "result_code", error_code); // 失败
-    }
-    
-    if (desc) {
-        cJSON_AddStringToObject(paras, "description", desc);
-    }
-    
-    cJSON_AddItemToObject(service_item, "paras", paras);
-    cJSON_AddItemToArray(services, service_item);
-    cJSON_AddItemToObject(root, "services", services);
-    
-    char *json_str = cJSON_PrintUnformatted(root);
-    if (json_str) {
-        esp_mqtt_client_publish(global_mqtt_client, MQTT_TOPIC_EVENTS_UP, json_str, 0, 1, 0);
-        free(json_str);
-    }
-    cJSON_Delete(root);
-}
-
-
 static void ota_mqtt_download_task(void *pvParameters)
 {
     char *task_param = (char *)pvParameters;
@@ -89,7 +57,7 @@ static void ota_mqtt_download_task(void *pvParameters)
     char *save_ptr = NULL;
     if (task_param == NULL)
     {
-        ESP_LOGE(TAG, "OTA入参指针为空");
+        ESP_LOGE(TAG, "OTA task parameter is NULL");
         vTaskDelete(NULL);
         return;
     }
@@ -97,7 +65,7 @@ static void ota_mqtt_download_task(void *pvParameters)
     url_ptr = strtok_r(task_param, "|",&save_ptr);
     if (url_ptr == NULL)
     {
-        ESP_LOGE(TAG, "参数解析失败，无URL");
+        ESP_LOGE(TAG, "Failed to parse URL");
         free(task_param); // 释放堆内存
         vTaskDelete(NULL);
         return;
@@ -105,23 +73,20 @@ static void ota_mqtt_download_task(void *pvParameters)
     token_ptr = strtok_r(NULL, "|",&save_ptr); // 第二段是token，可能为NULL
 
 
-    // if(g_ota_ctx.state != OTA_STATE_DOWNLOADING) return;
-
     int binary_file_length = 0;
     esp_ota_handle_t update_handle = 0 ;
-    g_ota_ctx.update_partition = esp_ota_get_next_update_partition(NULL);
+    update_partition = esp_ota_get_next_update_partition(NULL);
 
     esp_http_client_config_t http_config = {
         .url = url_ptr,
-        // .cert_pem = (char *)server_cert_pem_start,
         .timeout_ms = 10000,
         .keep_alive_enable = true,
     };
     esp_http_client_handle_t http_OTA_Download_client = esp_http_client_init(&http_config);    
     char auth_header[512] = {0};
-    // 严格按照文档格式拼接：Bearer + 空格 + 你的 token
+
+    // Bearer + " " + token
     snprintf(auth_header, sizeof(auth_header), "Bearer %s", token_ptr);
-    
     // 将其塞入 HTTP 请求头中
     esp_http_client_set_header(http_OTA_Download_client, "Authorization", auth_header);
     esp_http_client_set_header(http_OTA_Download_client, "Content-Type", "application/json");
@@ -136,7 +101,7 @@ static void ota_mqtt_download_task(void *pvParameters)
         return;
     }
     esp_http_client_fetch_headers(http_OTA_Download_client);
-    err = esp_ota_begin(g_ota_ctx.update_partition, OTA_SIZE_UNKNOWN, &update_handle);
+    err = esp_ota_begin(update_partition, OTA_SIZE_UNKNOWN, &update_handle);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "esp_ota_begin 失败: %s", esp_err_to_name(err));
         http_cleanup(http_OTA_Download_client);
@@ -189,7 +154,7 @@ static void ota_mqtt_download_task(void *pvParameters)
         vTaskDelete(NULL); 
     }
     // 设置下次启动的分区
-    err = esp_ota_set_boot_partition(g_ota_ctx.update_partition);
+    err = esp_ota_set_boot_partition(update_partition);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "设置启动分区失败: %s", esp_err_to_name(err));
         http_cleanup(http_OTA_Download_client);
@@ -250,9 +215,8 @@ static void ota_json_process(const char *json_str)
                 // process "version_query" 
                 if (strcmp(event_type->valuestring, "version_query") == 0) {
                     ESP_LOGI(TAG, "Recieved version_query");
-                    const esp_app_desc_t *app_desc = esp_app_get_description();
                     if (global_mqtt_client) {
-                        mqtt_report_version_generic(global_mqtt_client, app_desc->version);
+                        ota_mqtt_report_version_generic(global_mqtt_client, g_ota_ctx.current_ver);
                     }
                 }
                 
@@ -263,8 +227,9 @@ static void ota_json_process(const char *json_str)
                         cJSON *ver = cJSON_GetObjectItem(paras, "version");     
                         cJSON *url = cJSON_GetObjectItem(paras, "url");
                         cJSON *token = cJSON_GetObjectItem(paras, "access_token"); 
-
+                        
                         if (cJSON_IsString(ver) && cJSON_IsString(url)) {
+                            strlcpy(g_ota_ctx.latest_ver, ver->valuestring, sizeof(g_ota_ctx.latest_ver));
                             ESP_LOGI(TAG, "Recieved firmware_upgrade, version: %s", ver->valuestring);
                                 char *task_param = malloc(1024);
                                 if (task_param != NULL) {
@@ -325,6 +290,11 @@ static void ota_mqtt_event_handler(void *handler_args, esp_event_base_t base, in
 
 void ota_mqtt_init(void)
 {
+
+    const esp_app_desc_t *app_desc = esp_app_get_description();
+    strncpy(g_ota_ctx.current_ver, app_desc->version, sizeof(g_ota_ctx.current_ver) - 1);
+    g_ota_ctx.current_ver[sizeof(g_ota_ctx.current_ver) - 1] = '\0';
+    
     char broker_uri[256];
     snprintf(broker_uri, sizeof(broker_uri), "%s:%d", HW_MQTT_BROKER_URL, HW_MQTT_PORT);
 

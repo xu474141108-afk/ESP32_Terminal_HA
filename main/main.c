@@ -35,21 +35,15 @@ void nvs_erase_wifi_config(void)
 void app_main(void)
 {
     storage_init();
-    // nvs_erase_wifi_config(); // 开发阶段清空WiFi配置，正式发布前请注释掉这行代码
+    // nvs_erase_wifi_config();
     bsp_display_init();
     vTaskDelay(pdMS_TO_TICKS(1000));
     wifi_init();
-    // xEventGroupWaitBits(s_wifi_event_group, 
-    //                    WIFI_CONNECTED_BIT, 
-    //                    pdFALSE,         
-    //                    pdTRUE,           
-    //                    portMAX_DELAY);   
-    // ESP_LOGI(TAG, "WiFi 已就绪，");
     vTaskDelay(pdMS_TO_TICKS(2000));
     ota_mqtt_init();
     websocket_app_start();
     while (1) {
+        ESP_LOGI(TAG, "Firmware Update Success!");
         vTaskDelay(pdMS_TO_TICKS(8000));
-
     }
 }

@@ -35,7 +35,6 @@ extern const uint8_t server_cert_pem_end[] asm("_binary_ca_cert_pem_end");
 ota_context_t g_ota_ctx = {
     .state = OTA_STATE_IDLE,
     .update_partition = NULL,
-    .data_read = 0,
     .current_ver = "1.1.1",
     .latest_ver = {0} // 预设一个比当前版本高的版本号，方便测试
 };
@@ -138,7 +137,7 @@ void OTA_download_task(void *pvParameters)
     esp_http_client_fetch_headers(http_OTA_Download_client);
     err = esp_ota_begin(g_ota_ctx.update_partition, OTA_SIZE_UNKNOWN, &update_handle);
     if (err != ESP_OK) {
-        ESP_LOGE(TAG, "esp_ota_begin 失败: %s", esp_err_to_name(err));
+        ESP_LOGE(TAG, "esp_ota_begin Failed: %s", esp_err_to_name(err));
         http_cleanup(http_OTA_Download_client);
         esp_ota_abort(update_handle);
         g_ota_ctx.state = OTA_STATE_FAILED;
@@ -157,7 +156,7 @@ void OTA_download_task(void *pvParameters)
         } else if (data_read > 0) {
             err = esp_ota_write(update_handle, (const void *)ota_write_data, data_read);
             if (err != ESP_OK) {
-                ESP_LOGE(TAG, "esp_ota_write 失败: %s", esp_err_to_name(err));
+                ESP_LOGE(TAG, "esp_ota_write Failed: %s", esp_err_to_name(err));
                 http_cleanup(http_OTA_Download_client);
                 esp_ota_abort(update_handle);
                 g_ota_ctx.state = OTA_STATE_FAILED;
@@ -166,12 +165,12 @@ void OTA_download_task(void *pvParameters)
             binary_file_length += data_read;
         } else if (data_read == 0) {
             if (esp_http_client_is_complete_data_received(http_OTA_Download_client)) {
-                ESP_LOGI(TAG, "下载完成");
+                ESP_LOGI(TAG, "Download complete");
                 http_cleanup(http_OTA_Download_client);
                 g_ota_ctx.state = OTA_STATE_INSTALLING;
                 break;
             } else {
-                ESP_LOGE(TAG, "连接意外中断");
+                ESP_LOGE(TAG, "Connection interrupted unexpectedly");
                 http_cleanup(http_OTA_Download_client);
                 esp_ota_abort(update_handle);
                 g_ota_ctx.state = OTA_STATE_FAILED;
@@ -182,7 +181,7 @@ void OTA_download_task(void *pvParameters)
     }
     err = esp_ota_end(update_handle);
     if (err != ESP_OK) {
-        ESP_LOGE(TAG, "固件校验失败 (OTA End): %s", esp_err_to_name(err));
+        ESP_LOGE(TAG, "Firmware verification failed (OTA End): %s", esp_err_to_name(err));
         http_cleanup(http_OTA_Download_client);
         esp_ota_abort(update_handle);
         g_ota_ctx.state = OTA_STATE_FAILED;
@@ -191,13 +190,13 @@ void OTA_download_task(void *pvParameters)
     // 设置下次启动的分区
     err = esp_ota_set_boot_partition(g_ota_ctx.update_partition);
     if (err != ESP_OK) {
-        ESP_LOGE(TAG, "设置启动分区失败: %s", esp_err_to_name(err));
+        ESP_LOGE(TAG, "Failed to set boot partition: %s", esp_err_to_name(err));
         http_cleanup(http_OTA_Download_client);
         g_ota_ctx.state = OTA_STATE_FAILED;
         vTaskDelete(NULL);
     }
 
-    ESP_LOGI(TAG, "OTA 成功！系统将在 10 秒后重启...");
+    ESP_LOGI(TAG, "OTA completed successfully. Restarting");
     g_ota_ctx.state = OTA_STATE_SUCCESS;
     vTaskDelay(pdMS_TO_TICKS(1*1000));
     esp_restart();
