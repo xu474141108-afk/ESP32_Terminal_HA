@@ -3,7 +3,6 @@
 #include "nvs.h"
 #include "esp_log.h"
 #include <string.h>
-#include "ha_http_req.h"
 #include "custom.h"
 #include "ha_ws_client.h"
 #include "freertos/FreeRTOS.h"
@@ -51,10 +50,16 @@ static const char* cont_nvs_key_get2(uint8_t key_index)
             return "item_rd";
         case 3:
             return "item_md";
+        case 4:
+            return "item_time";
+        case 5:
+            return "item_temp";
+
         default:
             return NULL;
     }
 }
+
 
 static esp_err_t main_ui_item_save(ha_entity_t *p_slot, uint8_t key_index) 
 {
@@ -83,7 +88,7 @@ static esp_err_t main_ui_item_save(ha_entity_t *p_slot, uint8_t key_index)
 static esp_err_t main_ui_item_load(ha_entity_t *p_slot, uint8_t key_index)
 {
     if (p_slot == NULL) return ESP_ERR_INVALID_ARG;
-     memset(p_slot, 0, sizeof(ha_entity_t));
+    memset(p_slot, 0, sizeof(ha_entity_t));
     const char *nvs_key = cont_nvs_key_get2(key_index);
     if (nvs_key == NULL) return ESP_ERR_INVALID_ARG;
 
@@ -191,9 +196,10 @@ void all_date_load_init()
 {
     ha_date_item_load(g_ha_ws_client_config.ha_ip);
     ha_date_item_load(g_ha_ws_client_config.ha_token); 
-    for(int i=0;i<4;i++)
+    for(int i=0;i<6;i++)
     {
         main_ui_item_load(&g_main_ui_device_data[i],i);
+        ESP_LOGE(TAG, "Load from NVS, ID: %s, NAME: %s", g_main_ui_device_data[i].entity_id, g_main_ui_device_data[i].friendly_name);
     }
 }
 
@@ -221,3 +227,17 @@ void all_nvs_erase(void)
     ESP_ERROR_CHECK(ret);
 }
 
+
+
+void test_main_ui_item_save(){
+    // strcpy(g_main_ui_device_data[4].entity_id, "sensor.date_time");
+    // strcpy(g_main_ui_device_data[4].friendly_name, "DateTime");
+    // strcpy(g_main_ui_device_data[4].state, "0");
+    // strcpy(g_main_ui_device_data[5].entity_id, "weather.forecast_wo_de_jia");
+    // strcpy(g_main_ui_device_data[5].friendly_name, "Myhome");
+    // strcpy(g_main_ui_device_data[5].state, "0");
+    
+    // main_ui_item_save(&g_main_ui_device_data[4],4);
+    // main_ui_item_save(&g_main_ui_device_data[5],5);
+    
+}

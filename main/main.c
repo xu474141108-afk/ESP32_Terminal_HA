@@ -11,6 +11,7 @@ void app_main(void)
     storage_init();
     // all_nvs_erase();
     all_date_load_init();
+    
 
     bsp_display_init();
     vTaskDelay(pdMS_TO_TICKS(1000));

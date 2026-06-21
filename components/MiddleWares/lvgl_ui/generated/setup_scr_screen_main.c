@@ -336,9 +336,9 @@ void setup_scr_screen_main(lv_ui *ui)
     //Write codes screen_main_label_weather
     ui->screen_main_label_weather = lv_label_create(ui->screen_main_cont_weather);
     lv_obj_set_pos(ui->screen_main_label_weather, 10, 6);
-    lv_obj_set_size(ui->screen_main_label_weather, 51, 18);
+    lv_obj_set_size(ui->screen_main_label_weather, 160, 18);
     lv_label_set_text(ui->screen_main_label_weather, "Fri");
-    lv_label_set_long_mode(ui->screen_main_label_weather, LV_LABEL_LONG_WRAP);
+    lv_label_set_long_mode(ui->screen_main_label_weather, LV_LABEL_LONG_CLIP);
 
     //Write style for screen_main_label_weather, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
     lv_obj_set_style_border_width(ui->screen_main_label_weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);

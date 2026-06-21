@@ -134,7 +134,7 @@ void setup_scr_screen_wifi(lv_ui *ui)
     lv_obj_set_style_shadow_width(ui->screen_wifi_label_wifi_state, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 
-    //Write codes screen_wifi_qrcode_wifi_ap
+    //Write codes screen_wifi_qrcode_wifi_ap    
     ui->screen_wifi_qrcode_wifi_ap = lv_qrcode_create(ui->screen_wifi_cont_wifi_main);
     lv_obj_set_pos(ui->screen_wifi_qrcode_wifi_ap, 12, 31);
     lv_obj_set_size(ui->screen_wifi_qrcode_wifi_ap, 100, 100);

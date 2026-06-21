@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ha_http_req.h"
+#include "ha_ws_client.h"
 #include "esp_err.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
@@ -19,6 +19,7 @@ extern QueueHandle_t nvs_save_queue;
 
 void all_nvs_erase(void);
 void all_date_load_init();
+void test_main_ui_item_save();
 #ifdef __cplusplus
 }
 #endif

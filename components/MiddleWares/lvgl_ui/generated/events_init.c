@@ -18,13 +18,11 @@
 #include "custom.h"
 #include "esp_event.h"
 #include "app_wifi.h"
-#include "ha_http_req.h"
 #include "ha_ws_client.h"
 #include "esp_log.h"
 #include "storage_manager.h"
 
 
-static char g_last_toggle_entity_id[64];
 static void screen_main_event_handler (lv_event_t *e)
 {
     lv_event_code_t code = lv_event_get_code(e);
@@ -32,10 +30,12 @@ static void screen_main_event_handler (lv_event_t *e)
     switch (code) {
     case LV_EVENT_SCREEN_LOADED:
     {
+
         lv_label_set_text(ui->screen_main_lab_cont_rt, g_main_ui_device_data[0].friendly_name);
         lv_label_set_text(ui->screen_main_lab_cont_rm, g_main_ui_device_data[1].friendly_name);
         lv_label_set_text(ui->screen_main_lab_cont_rd, g_main_ui_device_data[2].friendly_name);
         lv_label_set_text(ui->screen_main_lab_cont_md, g_main_ui_device_data[3].friendly_name);
+        lv_label_set_text(guider_ui.screen_main_label_weather, g_main_ui_device_data[4].state);
         break;
     }
     default:
@@ -110,6 +110,7 @@ static void screen_main_cont_setup_event_handler (lv_event_t *e)
     case LV_EVENT_CLICKED:
     {
         ui_load_scr_animation(&guider_ui, &guider_ui.screen_setup, guider_ui.screen_setup_del, &guider_ui.screen_main_del, setup_scr_screen_setup, LV_SCR_LOAD_ANIM_MOVE_TOP, 200, 200, true, true);
+        lv_timer_pause(main_timer);
         break;
     }
     default:
@@ -193,6 +194,7 @@ static void screen_setup_btn_setup_back_event_handler (lv_event_t *e)
     case LV_EVENT_CLICKED:
     {
         ui_load_scr_animation(&guider_ui, &guider_ui.screen_main, guider_ui.screen_main_del, &guider_ui.screen_setup_del, setup_scr_screen_main, LV_SCR_LOAD_ANIM_MOVE_BOTTOM, 200, 200, true, true);
+        lv_timer_resume(main_timer);
         break;
     }
     default:

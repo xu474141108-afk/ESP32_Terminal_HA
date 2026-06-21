@@ -7,7 +7,6 @@
 #include "app_wifi.h"
 #include "storage_manager.h"
 #include "OTA_MQTT.h"
-#include "ha_http_req.h"
 #include "ha_ws_client.h"
 
 /**********************
@@ -22,7 +21,7 @@ static int g_temp_selecting_index = -1;
 lv_timer_t *wifi_timer = NULL;
 lv_timer_t *ha_timer = NULL;
 lv_timer_t *ota_timer = NULL;
-
+lv_timer_t *main_timer = NULL;
 
 static void HA_json_to_list(lv_obj_t *list_obj, ha_device_t *devices);
 static void HA_select_event_show(lv_event_t * e);
@@ -304,6 +303,21 @@ void WIFI_state_monitor_task(lv_timer_t * timer){
     lv_label_set_text(guider_ui.screen_wifi_label_wifi_info2, buf_ip);
 }
 
+//
+static void Main_date_monitor_task(lv_timer_t *timer)
+{ 
+    if (lv_scr_act() != guider_ui.screen_main) {
+        return;
+    }
+
+     const char *state_str = g_main_ui_device_data[4].state;
+    if (state_str == NULL || state_str[0] == '\0')
+    {
+        state_str = "--";
+    }
+    lv_label_set_text(guider_ui.screen_main_label_weather, state_str);
+}
+
 void all_timer_creat_init()
 {
     wifi_timer = lv_timer_create(WIFI_state_monitor_task, 500, NULL);
@@ -312,4 +326,6 @@ void all_timer_creat_init()
     lv_timer_pause(ota_timer);
     ha_timer = lv_timer_create(HA_state_monitor_task, 100, NULL);
     lv_timer_pause(ha_timer);
+    main_timer = lv_timer_create(Main_date_monitor_task, 1000, NULL);
+    // lv_timer_pause(main_timer);
 }

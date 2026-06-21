@@ -19,7 +19,7 @@ extern "C" {
 extern lv_timer_t *wifi_timer;
 extern lv_timer_t *ha_timer;
 extern lv_timer_t *ota_timer;
-
+extern lv_timer_t *main_timer;
 
 void custom_init(lv_ui *ui);
 //OTA升级界面

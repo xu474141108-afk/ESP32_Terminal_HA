@@ -1,4 +1,5 @@
 #include "esp_websocket_client.h"
+#include "esp_http_client.h"
 #include "esp_log.h"
 #include "cJSON.h" 
 #include "string.h"
@@ -8,8 +9,6 @@
 #include "esp_heap_caps.h"
 #include "esp_event.h"
 #include "custom.h"
-#include "app_test.h"
-#include "ha_http_req.h"
 #include "ha_ws_client.h"
 ESP_EVENT_DEFINE_BASE(HA_ACTION_EVENTS);
 
@@ -18,17 +17,20 @@ ESP_EVENT_DEFINE_BASE(HA_ACTION_EVENTS);
 #define MAX_WS_BUFFER_SIZE (128 * 1024) // 给 128KB，PSRAM 绰绰有余
 
 
-static void websocket_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data);
+
 // static void process_ha_json_payload(cJSON *root);
 static void* cjson_psram_malloc(size_t size);
 static void cjson_psram_free(void* ptr);
-static void handle_ha_message(cJSON *root);
 
 typedef struct {
     char *data;
     size_t len;
 } ws_event_data_t;
 
+typedef struct {
+    const char *entities[4];
+    int valid_count;
+} ha_ws_entities_t;
 
 static char *ws_rx_buffer = NULL;
 static int msg_id = 1; 
@@ -37,14 +39,31 @@ static int g_subscribe_entities_id = 0;
 static esp_websocket_client_handle_t client;
 ha_ws_client_config_t g_ha_ws_client_config={
                 .ha_ip = "192.168.1.1",
-                .ha_token = ""
-            };
+                .ha_token = ""};
+
+ha_entity_t g_main_ui_device_data[6] =  {0};
+ha_device_t g_HAdevice_ctx;
 
 
+void ha_ws_subscribe_entities(int msg_id, const char **entity_ids, int count) {
+    cJSON *root = cJSON_CreateObject();
+    cJSON_AddNumberToObject(root, "id", msg_id);
+    cJSON_AddStringToObject(root, "type", "subscribe_entities");
+
+    cJSON *array = cJSON_CreateArray();
+    for (int i = 0; i < count; i++) {
+        cJSON_AddItemToArray(array, cJSON_CreateString(entity_ids[i]));
+    }
+    cJSON_AddItemToObject(root, "entity_ids", array);
+
+    char *out = cJSON_PrintUnformatted(root);
+    // ... 调用 esp_websocket_client_send_text 发送 out ...
+    free(out);
+    cJSON_Delete(root);
+}
 
 
-
-void ws_entity_control(const char *entity_id, const char *service) {
+static void ha_ws_entity_control(const char *entity_id, const char *service) {
     char domain[32];
     const char *dot = strchr(entity_id, '.');
     if (dot) {
@@ -76,108 +95,151 @@ void ws_entity_control(const char *entity_id, const char *service) {
     cJSON_Delete(root);
 }
 
-void ha_entity_subscribe_entities() {
-    const char *clean_ids[4]; 
-    int valid_count = 0;
-
-    for (int i = 0; i < 4; i++) {
-        const char *current_id = g_main_ui_device_data[i].entity_id;
-        if (current_id[0] == '\0' || strcmp(current_id, "0") == 0) {
+static ha_ws_entities_t ha_ws_entities_filtro(const char **entities_input)
+{
+    ha_ws_entities_t entities_ret = {0};
+    if (entities_input == NULL)
+    {
+        ESP_LOGW(TAG, "传入实体数组为空");
+        return entities_ret;
+    }
+    for (int i = 0; entities_input[i] != NULL && entities_ret.valid_count < 6; i++)
+    {
+        const char *current_id = entities_input[i];
+        if (current_id == NULL || current_id[0] == '\0' || strcmp(current_id, "0") == 0)
+        {
             continue;
         }
         bool is_duplicate = false;
-        for (int j = 0; j < valid_count; j++) {
-            if (strcmp(clean_ids[j], current_id) == 0) {
+        for (int j = 0; j < entities_ret.valid_count; j++)
+        {
+            if (strcmp(entities_ret.entities[j], current_id) == 0)
+            {
                 is_duplicate = true;
                 break;
             }
         }
-
-        if (!is_duplicate && valid_count < 4) {
-            clean_ids[valid_count++] = current_id;
+        if (!is_duplicate)
+        {
+            entities_ret.entities[entities_ret.valid_count++] = current_id;
         }
     }
 
-    if (valid_count <= 0) {return;}
-    cJSON *root = cJSON_CreateObject();
-    cJSON_AddNumberToObject(root, "id", msg_id);
-    cJSON_AddStringToObject(root, "type", "subscribe_entities");
-
-    // 构建 trigger 数组
-    
-    cJSON *entity_array = cJSON_CreateArray();
-    for (int i = 0; i < valid_count; i++) {
-        cJSON_AddItemToArray(entity_array, cJSON_CreateString(clean_ids[i]));
+    if (entities_ret.valid_count <= 0)
+    {
+        ESP_LOGW(TAG, "没有合法可订阅的实体ID");
     }
-    cJSON_AddItemToObject(root, "entity_ids", entity_array);
-
-    // 转换并发送
-    char *out = cJSON_PrintUnformatted(root);
-    if (out) {
-        int len = strlen(out);
-        if (esp_websocket_client_is_connected(client)) {
-            esp_websocket_client_send_text(client, out, len, portMAX_DELAY);
-            ESP_LOGI(TAG, "已发送订阅 %d 个实体的指令, ID: %d", valid_count, msg_id);
-        }
-        free(out);
-    }
-    cJSON_Delete(root);
-    g_subscribe_entities_id = msg_id;
-    msg_id++; // ID 自增
+    return entities_ret;
 }
 
-void ha_entity_subscribe_trigger() {
-    const char *clean_ids[4]; 
-    int valid_count = 0;
-
-    for (int i = 0; i < 4; i++) {
-        const char *current_id = g_main_ui_device_data[i].entity_id;
-        if (current_id[0] == '\0' || strcmp(current_id, "0") == 0) {
-            continue;
-        }
-        bool is_duplicate = false;
-        for (int j = 0; j < valid_count; j++) {
-            if (strcmp(clean_ids[j], current_id) == 0) {
-                is_duplicate = true;
-                break;
-            }
-        }
-
-        if (!is_duplicate && valid_count < 4) {
-            clean_ids[valid_count++] = current_id;
-        }
-    }
-
-    if (valid_count <= 0) {return;}
+static void ha_ws_trigger_json_send(int msg_id_num, ha_ws_entities_t entities_input)
+{
     cJSON *root = cJSON_CreateObject();
-    cJSON_AddNumberToObject(root, "id", msg_id);
+    cJSON_AddNumberToObject(root, "id", msg_id_num);
     cJSON_AddStringToObject(root, "type", "subscribe_trigger");
 
-    // 构建 trigger 数组
     cJSON *trigger = cJSON_CreateObject();
     cJSON_AddStringToObject(trigger, "platform", "state");
-    
+
     cJSON *entity_array = cJSON_CreateArray();
-    for (int i = 0; i < valid_count; i++) {
-        cJSON_AddItemToArray(entity_array, cJSON_CreateString(clean_ids[i]));
+    for (int i = 0; i < entities_input.valid_count; i++)
+    {
+        cJSON_AddItemToArray(entity_array, cJSON_CreateString(entities_input.entities[i]));
     }
     cJSON_AddItemToObject(trigger, "entity_id", entity_array);
     cJSON_AddItemToObject(root, "trigger", trigger);
 
-    // 转换并发送
     char *out = cJSON_PrintUnformatted(root);
-    if (out) {
+    if (out)
+    {
         int len = strlen(out);
-        if (esp_websocket_client_is_connected(client)) {
+        if (esp_websocket_client_is_connected(client))
+        {
             esp_websocket_client_send_text(client, out, len, portMAX_DELAY);
-            ESP_LOGI(TAG, "已发送订阅 %d 个实体的指令, ID: %d", valid_count, msg_id);
+            ESP_LOGI(TAG, "已发送订阅 %d 个实体trigger指令, ID: %d", entities_input.valid_count, msg_id_num);
+            for(int i = 0; i < entities_input.valid_count; i++){
+                ESP_LOGI(TAG, "已发送实体id: %s", entities_input.entities[i]);
+            }
         }
         free(out);
     }
+
     cJSON_Delete(root);
-    g_subscribe_trigger_id = msg_id;
-    msg_id++; // ID 自增
 }
+
+static void ha_ws_entities_json_send(int msg_id_num, ha_ws_entities_t entities_input)
+{
+    cJSON *root = cJSON_CreateObject();
+    cJSON_AddNumberToObject(root, "id", msg_id_num);
+    cJSON_AddStringToObject(root, "type", "subscribe_entities");
+
+    cJSON *entity_array = cJSON_CreateArray();
+    for (int i = 0; i < entities_input.valid_count; i++)
+    {
+        cJSON_AddItemToArray(entity_array, cJSON_CreateString(entities_input.entities[i]));
+    }
+
+    cJSON_AddItemToObject(root, "entity_ids", entity_array);
+
+    char *out = cJSON_PrintUnformatted(root);
+    if (out)
+    {
+        int len = strlen(out);
+        if (esp_websocket_client_is_connected(client))
+        {
+            esp_websocket_client_send_text(client, out, len, portMAX_DELAY);
+            ESP_LOGI(TAG, "已发送订阅 %d 个实体trigger指令, ID: %d", entities_input.valid_count, msg_id_num);
+            for(int i = 0; i < entities_input.valid_count; i++){
+                ESP_LOGI(TAG, "已发送实体id: %s", entities_input.entities[i]);
+            }
+        }
+        free(out);
+    }
+
+    cJSON_Delete(root);
+}
+
+static void ha_ws_convert_trigger_subsc(const ha_entity_t *entity_input)
+{
+    const char *temp_ptr_arr[7] = {0}; 
+    int idx = 0;
+    for(int i = 0; i < 6; i++)
+    {
+        temp_ptr_arr[idx++] = entity_input[i].entity_id;
+    }
+    temp_ptr_arr[idx] = NULL;
+    ha_ws_entities_t entity_ids = ha_ws_entities_filtro(temp_ptr_arr);
+    if (entity_ids.valid_count <= 0)
+    {
+        return;
+    }
+
+    ha_ws_trigger_json_send(msg_id, entity_ids);
+    g_subscribe_trigger_id = msg_id;
+    msg_id++;
+}
+
+
+static void ha_ws_convert_entities_subsc(const ha_entity_t *entity_input){
+    const char *temp_ptr_arr[7] = {0}; 
+    int idx = 0;
+    for(int i = 0; i < 6; i++)
+    {
+        temp_ptr_arr[idx++] = entity_input[i].entity_id;
+    }
+    temp_ptr_arr[idx] = NULL;
+    ha_ws_entities_t entity_ids = ha_ws_entities_filtro(temp_ptr_arr);
+    if (entity_ids.valid_count <= 0)
+    {
+        return;
+    }
+
+    ha_ws_entities_json_send(msg_id, entity_ids);
+    g_subscribe_trigger_id = msg_id;
+    msg_id++;
+}
+
+
 
 static cJSON* cJSON_GetObjectItemByPath(cJSON* root, const char* path) {
     char *path_copy = strdup(path); // 复制路径字符串以进行切割
@@ -260,19 +322,15 @@ static void ha_auth_token_send() {
 //     ESP_LOGI(TAG, "解析完成，内存已回收。剩余堆内存: %ld", esp_get_free_heap_size());
 // }
 
+void ha_ws_message_update_handle(cJSON *root) {
+    if (!cJSON_GetObjectItem(root, "event")) return;
 
-void ha_process_state_update(cJSON *root) {
-    ESP_LOGI(TAG, "开始解析状态更新");
-    cJSON *event = cJSON_GetObjectItem(root, "event");
-    if (!event) return;
+    cJSON *id_item = cJSON_GetObjectItem(root, "id");
+    ESP_LOGE(TAG,"当前id: %d , t_id: %d, e_id: %d", id_item->valueint,g_subscribe_trigger_id,g_subscribe_entities_id);
     const char *e_id = NULL;
     const char *new_state = NULL;
  
-    // --- 路径判断逻辑 ---
-    ESP_LOGE("update", "paso 4");
     if (cJSON_GetObjectItemByPath(root, "event.variables.trigger")) {
-        ESP_LOGE("update", "这是 Trigger 模式");
-        // 这是 Trigger 模式
         cJSON *id_node = cJSON_GetObjectItemByPath(root, "event.variables.trigger.entity_id");
         cJSON *state_node = cJSON_GetObjectItemByPath(root, "event.variables.trigger.to_state.state");
         if (id_node && state_node) {
@@ -281,7 +339,6 @@ void ha_process_state_update(cJSON *root) {
             ESP_LOGI(TAG, "Trigger: %s %s", e_id, new_state);
         }
     } else if(cJSON_GetObjectItemByPath(root, "event.data")){
-        ESP_LOGE("update", "这是 Trigger 模式");
         cJSON *id_node = cJSON_GetObjectItem(root, "event.data.entity_id");
         cJSON *state_node = cJSON_GetObjectItemByPath(root, "event.data.new_state.state");
         if (id_node && state_node) {
@@ -289,30 +346,57 @@ void ha_process_state_update(cJSON *root) {
             new_state = state_node->valuestring;
             ESP_LOGI(TAG, "Entities: %s %s", e_id, new_state);
         }
+        
+    } else if(cJSON_GetObjectItemByPath(root, "event.c")){
+        cJSON *target_node = cJSON_GetObjectItemByPath(root, "event.c");
+        if (target_node) {
+            cJSON *item = target_node->child;
+            while (item) {
+                e_id = item->string;
+                cJSON *plus_node = cJSON_GetObjectItem(item, "+");
+                if (plus_node) {
+                    cJSON *state_node = cJSON_GetObjectItem(plus_node, "s");
+                    new_state = state_node->valuestring;
+                    if (new_state) {
+                        ESP_LOGI(TAG, "实体[%s] 状态更新为: %s", e_id, new_state);
+                    }
+                }
+                item = item->next;
+            }
+        }
+    }else if(cJSON_GetObjectItemByPath(root, "event.a")){
+        cJSON *target_node = cJSON_GetObjectItemByPath(root, "event.a");
+        if (target_node) {
+            cJSON *item = target_node->child;
+            while (item) {
+                e_id = item->string;
+                cJSON *state_node = cJSON_GetObjectItem(item, "s");
+                new_state =  state_node->valuestring;
+                if (new_state) {
+                    ESP_LOGI(TAG, "实体[%s] 状态更新为: %s", e_id, new_state);
+                }
+
+                item = item->next;
+            }
+        }
     }else{
-        ESP_LOGE("update", "这是其他模式");
+        ESP_LOGI(TAG, "Error parsing JSON");
         return;
     }
 
-    // --- 执行更新逻辑 ---
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 6; i++) {
         if (strcmp(g_main_ui_device_data[i].entity_id, e_id) == 0) {
-            bool new_is_on = (strcmp(new_state, "on") == 0);
-                if (g_main_ui_device_data[i].is_on != new_is_on)
-            {
-                g_main_ui_device_data[i].is_on = new_is_on;
-                ESP_LOGI(TAG, "数组元素%d,Changed: %s -> %s",i ,e_id, new_state);
-            }else{
-                ESP_LOGI(TAG, "数组元素%d,No change: %s -> %s",i ,e_id, new_state);
-            }
+            strncpy(g_main_ui_device_data[i].state, new_state, sizeof(g_main_ui_device_data[i].state) - 1);
+            g_main_ui_device_data[i].state[sizeof(g_main_ui_device_data[i].state) - 1] = '\0';
+            ESP_LOGI(TAG, "更新实体状态: %s -> %s",g_main_ui_device_data[i].entity_id,g_main_ui_device_data[i].state);
         }else{
-                ESP_LOGI(TAG, "数组元素%d 与收到的id 不匹配%s",i,e_id);
+            ESP_LOGI(TAG, "数组元素%d 与收到的id 不匹配%s",i,e_id);
         }
     }
+
 }
 
-
-static void handle_ha_message_siemple(cJSON *root){
+static void ha_ws_message_handle(cJSON *root){
 
     cJSON *type_item = cJSON_GetObjectItem(root, "type");
     const char *type = cJSON_IsString(type_item) ? type_item->valuestring : "";
@@ -320,12 +404,16 @@ static void handle_ha_message_siemple(cJSON *root){
     if (strcmp(type, "auth_required") == 0) {
         ESP_LOGI(TAG, "Recieved auth_required");
         esp_event_post(HA_ACTION_EVENTS, HA_SYSTEM_CONNECTED, NULL, 0, portMAX_DELAY); 
+        vTaskDelay(pdMS_TO_TICKS(100));
         ha_auth_token_send();
     } 
     else if (strcmp(type, "auth_ok") == 0) {
-        ESP_LOGI(TAG, "Autorised, subscribe entities states");
-        ha_entity_subscribe_trigger();
-        // ha_entity_subscribe_entities();
+        ESP_LOGI(TAG, "Autorised, subscribe entities states");      
+        // ha_ws_entity_convert_subsc(g_main_ui_device_data);
+        ha_ws_convert_entities_subsc(g_main_ui_device_data);
+    }
+    else if (strcmp(type, "auth_invalid") == 0) {
+        ESP_LOGE(TAG, "Autorisation failed, will be closed");
     }
     else if (strcmp(type, "result") == 0) {
         cJSON *id_item = cJSON_GetObjectItem(root, "id");
@@ -338,9 +426,7 @@ static void handle_ha_message_siemple(cJSON *root){
         }
     }
     else if (strcmp(type, "event") == 0) {
-            cJSON *id_item = cJSON_GetObjectItem(root, "id");
-            ESP_LOGE(TAG,"当前id: %d , t_id: %d, e_id: %d", id_item->valueint,g_subscribe_trigger_id,g_subscribe_entities_id);
-            ha_process_state_update(root);
+            ha_ws_message_update_handle(root);
     }
     else {
         ESP_LOGW(TAG, "Non-expected message type: [%s]", type);
@@ -348,100 +434,7 @@ static void handle_ha_message_siemple(cJSON *root){
     cJSON_Delete(root);
 }
 
-
-//数据处理函数
-static void handle_ha_message(cJSON *root){
-
-    cJSON *type_item = cJSON_GetObjectItem(root, "type");
-    const char *type = cJSON_IsString(type_item) ? type_item->valuestring : "";
-    
-    if (strcmp(type, "auth_required") == 0) {
-        ESP_LOGI(TAG, "Recieved auth_required");
-        esp_event_post(HA_ACTION_EVENTS, HA_SYSTEM_CONNECTED, NULL, 0, portMAX_DELAY); 
-        ha_auth_token_send();
-    } 
-    else if (strcmp(type, "auth_ok") == 0) {
-        ESP_LOGI(TAG, "Autorised, subscribe entities states");
-        ha_entity_subscribe_trigger();
-    }
-    else if (strcmp(type, "result") == 0) {
-        cJSON *id_item = cJSON_GetObjectItem(root, "id");
-        if (cJSON_IsNumber(id_item) && id_item->valueint == msg_id - 1) { // 确认这是我们发出的请求的响应
-            ESP_LOGI(TAG, "Recieved result, ID为 %d", msg_id - 1);
-        }
-        else{
-            int other_id = cJSON_IsNumber(id_item) ? id_item->valueint : -1;
-            ESP_LOGW(TAG, "Revieved other result, ID: %d", other_id);
-        }
-    }
-    else if (strcmp(type, "event") == 0) {
-        cJSON *id_item = cJSON_GetObjectItem(root, "id");
-        if (cJSON_IsNumber(id_item) && id_item->valueint == g_subscribe_trigger_id){
-            ESP_LOGI(TAG, "Recieved event, ID: %d ", g_subscribe_trigger_id);
-            cJSON *id_node = cJSON_GetObjectItemByPath(root, "event.variables.trigger.entity_id");
-            cJSON *state_node = cJSON_GetObjectItemByPath(root, "event.variables.trigger.to_state.state");
-            if (state_node && id_node) {
-                const char *new_state = state_node->valuestring;
-                const char *e_id = id_node->valuestring;
-
-                for (int i = 0; i < 4; i++) {
-                    if (strcmp(g_main_ui_device_data[i].entity_id, e_id) == 0) {
-                        bool new_is_on = (strcmp(new_state, "on") == 0);
-                         if (g_main_ui_device_data[i].is_on != new_is_on)
-                        {
-                            g_main_ui_device_data[i].is_on = new_is_on;
-                            ESP_LOGI(TAG, "数组元素%d,Changed: %s -> %s",i ,e_id, new_state);
-                        }else{
-                            ESP_LOGI(TAG, "数组元素%d,No change: %s -> %s",i ,e_id, new_state);
-                        }
-                    }else{
-                            ESP_LOGI(TAG, "数组元素%d 与收到的id 不匹配%s",i,e_id);
-                    }
-                }
-            }
-            else{
-                ESP_LOGE(TAG,"new_state / e_id is null");
-            }
-        }
-        else if (cJSON_IsNumber(id_item) && id_item->valueint == g_subscribe_entities_id){
-            ESP_LOGI(TAG, "Recieved event, ID: %d ", g_subscribe_entities_id);
-            cJSON *id_node = cJSON_GetObjectItemByPath(root, "event.variables.trigger.entity_id");
-            cJSON *state_node = cJSON_GetObjectItemByPath(root, "event.variables.trigger.to_state.state");
-            if (state_node && id_node) {
-                const char *new_state = state_node->valuestring;
-                const char *e_id = id_node->valuestring;
-
-                for (int i = 0; i < 4; i++) {
-                    if (strcmp(g_main_ui_device_data[i].entity_id, e_id) == 0) {
-                        bool new_is_on = (strcmp(new_state, "on") == 0);
-                         if (g_main_ui_device_data[i].is_on != new_is_on)
-                        {
-                            g_main_ui_device_data[i].is_on = new_is_on;
-                            ESP_LOGI(TAG, "数组元素%d,Changed: %s -> %s",i ,e_id, new_state);
-                        }else{
-                            ESP_LOGI(TAG, "数组元素%d,No change: %s -> %s",i ,e_id, new_state);
-                        }
-                    }else{
-                            ESP_LOGI(TAG, "数组元素%d 与收到的id 不匹配%s",i,e_id);
-                    }
-                }
-            }
-            else{
-                ESP_LOGE(TAG,"new_state / e_id is null");
-            }
-        }
-        else{
-            int other_id = cJSON_IsNumber(id_item) ? id_item->valueint : -1;
-            ESP_LOGW(TAG, "Recieved other event, ID: %d", other_id);
-        }
-    }
-    else {
-        ESP_LOGW(TAG, "Non-expected message type: [%s]", type);
-    }
-    cJSON_Delete(root);
-}
-
-static void websocket_logic_handler(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
+static void ha_ws_logic_handler(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
     switch (id) {
     case LVGL_WS_BUTTON_RT_TOGGLE:{
         ESP_LOGI(TAG, "RT BUTTON PRESSED");
@@ -451,7 +444,7 @@ static void websocket_logic_handler(void* handler_args, esp_event_base_t base, i
             break;
         }
         ESP_LOGI(TAG, "Toggle entity: %s", entity_id);
-        ws_entity_control(entity_id, "toggle");
+        ha_ws_entity_control(entity_id, "toggle");
         break;
     }
        
@@ -464,7 +457,7 @@ static void websocket_logic_handler(void* handler_args, esp_event_base_t base, i
             break;
         }
         ESP_LOGI(TAG, "Toggle entity: %s", entity_id);
-        ws_entity_control(entity_id, "toggle");
+        ha_ws_entity_control(entity_id, "toggle");
         break;
     }
        
@@ -477,7 +470,7 @@ static void websocket_logic_handler(void* handler_args, esp_event_base_t base, i
             break;
         }
         ESP_LOGI(TAG, "Toggle entity: %s", entity_id);
-        ws_entity_control(entity_id, "toggle");
+        ha_ws_entity_control(entity_id, "toggle");
         break;
     }
        
@@ -490,7 +483,7 @@ static void websocket_logic_handler(void* handler_args, esp_event_base_t base, i
             break;
         }
         ESP_LOGI(TAG, "Toggle entity: %s", entity_id);
-        ws_entity_control(entity_id, "toggle");
+        ha_ws_entity_control(entity_id, "toggle");
         break;
     }
        
@@ -503,7 +496,7 @@ static void websocket_logic_handler(void* handler_args, esp_event_base_t base, i
             break;
         }else {
             ESP_LOGI(TAG, "--- 即将解析数据 (Len: %d) ---", ha_data->len);
-            handle_ha_message_siemple(head);
+            ha_ws_message_handle(head);
         }   
     break;
 
@@ -536,7 +529,7 @@ static void websocket_logic_handler(void* handler_args, esp_event_base_t base, i
 }
 
 // 回调函数
-static void websocket_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data) {
+static void ha_ws_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data) {
     esp_websocket_event_data_t *data = (esp_websocket_event_data_t *)event_data;
    
     switch (event_id) {
@@ -597,7 +590,7 @@ void websocket_app_start() {
 
     static bool handler_registered = false;
     if (!handler_registered) {
-        esp_event_handler_register(HA_ACTION_EVENTS, ESP_EVENT_ANY_ID, websocket_logic_handler, NULL);
+        esp_event_handler_register(HA_ACTION_EVENTS, ESP_EVENT_ANY_ID, ha_ws_logic_handler, NULL);
         handler_registered = true;
     }
 
@@ -612,7 +605,7 @@ void websocket_app_start() {
         // 停止WebSocket连接
         esp_websocket_client_stop(client);
         // 注销事件监听（可选，规范操作）
-        esp_websocket_unregister_events(client, WEBSOCKET_EVENT_ANY, websocket_event_handler);
+        esp_websocket_unregister_events(client, WEBSOCKET_EVENT_ANY, ha_ws_event_handler);
         // 销毁客户端，释放内存
         esp_websocket_client_destroy(client);
         client = NULL;
@@ -624,13 +617,13 @@ void websocket_app_start() {
 
     const esp_websocket_client_config_t ws_cfg = {
         .uri = ws_uri_buffer,
-        .buffer_size = 60000, // 关键点：缓冲区必须大于 42kb，否则大数据包会被截断报错
-        .reconnect_timeout_ms = 10000, // 断线重连间隔，10秒
-        .network_timeout_ms = 20000,   // 网络超时时间，10秒
+        .buffer_size = 60000, 
+        .reconnect_timeout_ms = 15000, // 断线重连间
+        .network_timeout_ms = 20000,   // 网络超时时间
         .pingpong_timeout_sec = 120,
     };
     client = esp_websocket_client_init(&ws_cfg);
-    esp_websocket_register_events(client, WEBSOCKET_EVENT_ANY, websocket_event_handler, (void *)client);
+    esp_websocket_register_events(client, WEBSOCKET_EVENT_ANY, ha_ws_event_handler, (void *)client);
     esp_websocket_client_start(client);
 }
 
@@ -640,4 +633,119 @@ static void* cjson_psram_malloc(size_t size) {
 
 static void cjson_psram_free(void* ptr) {
     heap_caps_free(ptr);
+}
+
+
+
+void get_ha_states_to_psram() {
+    g_HAdevice_ctx.state_ha = HA_STATE_SEARCHING;
+    cJSON_Hooks hooks = {
+        .malloc_fn = cjson_psram_malloc,
+        .free_fn = cjson_psram_free
+    };
+    cJSON_InitHooks(&hooks);
+    char api_uri_buffer[64] = {0};
+    snprintf(api_uri_buffer, sizeof(api_uri_buffer), "http://%s:8123/api/states", g_ha_ws_client_config.ha_ip);
+    esp_http_client_config_t config = {
+        .url = api_uri_buffer,
+        .method = HTTP_METHOD_GET,
+        .timeout_ms = 8000, 
+        .disable_auto_redirect = true,
+    };
+    esp_http_client_handle_t http_HA_client = esp_http_client_init(&config);
+
+    char auth_header[512]; 
+    snprintf(auth_header, sizeof(auth_header), "Bearer %s", g_ha_ws_client_config.ha_token);
+    esp_http_client_set_header(http_HA_client, "Authorization", auth_header);
+    esp_http_client_set_header(http_HA_client, "Content-Type", "application/json");
+
+    esp_err_t err = esp_http_client_open(http_HA_client,0);
+    if(err != ESP_OK){
+        ESP_LOGE(TAG, "连接失败: %s", esp_err_to_name(err));
+        if (client != NULL) {
+            esp_http_client_close(http_HA_client);
+            esp_http_client_cleanup(http_HA_client);
+            client = NULL;
+        }
+        g_HAdevice_ctx.state_ha = HA_STATE_HTTP_ERROR;
+        return;
+    }
+
+    int content_length = esp_http_client_fetch_headers(http_HA_client);
+    if (content_length <= 0 ||content_length > 500 * 1024) {
+        ESP_LOGE(TAG, "内容长度超出合理范围 %d",content_length);
+        if (client != NULL) {
+            esp_http_client_close(http_HA_client);
+            esp_http_client_cleanup(http_HA_client);
+            client = NULL;
+        }
+        g_HAdevice_ctx.state_ha = HA_STATE_HTTP_ERROR;
+        return;
+    }
+    
+    // 直接在 PSRAM 中申请长度对应的内存
+    char *buffer = heap_caps_malloc(content_length + 1, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    if (buffer == NULL) {
+        ESP_LOGE(TAG, "PSRAM 申请失败！");
+        if (client != NULL) {
+            esp_http_client_close(http_HA_client);
+            esp_http_client_cleanup(http_HA_client);
+            client = NULL;
+        }
+        g_HAdevice_ctx.state_ha = HA_STATE_HTTP_ERROR;
+        return;
+    }
+
+    int read_len = esp_http_client_read(http_HA_client, buffer, content_length);
+    buffer[read_len] = '\0';
+
+    cJSON *root = cJSON_Parse(buffer);
+    if (root && cJSON_IsArray(root)) {
+        int array_size = cJSON_GetArraySize(root);
+        ESP_LOGI(TAG, "JSON 解析成功，实体总数: %d", array_size);
+        
+        g_HAdevice_ctx.device_count = 0;
+
+        for (int i = 0; i < array_size; i++) {
+            cJSON *item = cJSON_GetArrayItem(root, i);
+            cJSON *eid_obj = cJSON_GetObjectItem(item, "entity_id");
+
+            if (!cJSON_IsString(eid_obj)) continue;
+            const char *eid = eid_obj->valuestring;
+
+            // 筛选条件：只取 light 和 switch 设备
+            if (strstr(eid, "light.") || strstr(eid, "switch.")||strstr(eid, "input_button.")) {
+                if (g_HAdevice_ctx.device_count >= 50) break;
+
+                cJSON *attrs = cJSON_GetObjectItem(item, "attributes");
+                const char *fname = eid;
+
+                if (cJSON_IsObject(attrs)) {
+                    cJSON *fname_obj = cJSON_GetObjectItem(attrs, "friendly_name");
+                    if (cJSON_IsString(fname_obj)) fname = fname_obj->valuestring;
+                }
+
+                // 存入全局数组
+                strncpy(g_HAdevice_ctx.entity[g_HAdevice_ctx.device_count].entity_id, eid, 63);
+                strncpy(g_HAdevice_ctx.entity[g_HAdevice_ctx.device_count].friendly_name, fname, 63);
+                g_HAdevice_ctx.device_count++;
+            }
+        }
+        g_HAdevice_ctx.state_ha = HA_STATE_READY;
+        
+    }
+    else{
+        ESP_LOGI(TAG, "JSON 解析失败");
+        g_HAdevice_ctx.state_ha = HA_STATE_JSON_ERROR;
+    }
+
+    if(root){
+           cJSON_Delete(root); 
+    }
+    heap_caps_free(buffer); 
+    if (client != NULL) {
+        esp_http_client_close(http_HA_client);
+        esp_http_client_cleanup(http_HA_client);
+        client = NULL;
+    }
 }
