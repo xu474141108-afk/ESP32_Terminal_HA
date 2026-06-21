@@ -110,7 +110,7 @@ void setup_scr_screen_OTA(lv_ui *ui)
     lv_obj_set_pos(ui->screen_OTA_label_OTA_state, 120, 30);
     lv_obj_set_size(ui->screen_OTA_label_OTA_state, 180, 22);
     lv_label_set_text(ui->screen_OTA_label_OTA_state, "State:");
-    lv_label_set_long_mode(ui->screen_OTA_label_OTA_state, LV_LABEL_LONG_WRAP);
+    lv_label_set_long_mode(ui->screen_OTA_label_OTA_state, LV_LABEL_LONG_MODE_SCROLL);
 
     //Write style for screen_OTA_label_OTA_state, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
     lv_obj_set_style_border_width(ui->screen_OTA_label_OTA_state, 1, LV_PART_MAIN|LV_STATE_DEFAULT);

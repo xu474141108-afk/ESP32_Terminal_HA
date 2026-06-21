@@ -3,115 +3,109 @@
 #include "custom.h"
 #include "esp_log.h"
 #include "OTA.h"
+#include "OTA_MQTT.h"
 #include "app_wifi.h"
 #include "storage_manager.h"
-
+#include "OTA_MQTT.h"
+#include "ha_http_req.h"
+#include "ha_ws_client.h"
 
 /**********************
  *  HA new button set
  **********************/
 #define TAG "Custom"
+
 // HA设备操作界面
 
-UI_Main_cout_item_t g_ui_main_data = {0};
 static int g_temp_selecting_index = -1;
+//timer
+lv_timer_t *wifi_timer = NULL;
+lv_timer_t *ha_timer = NULL;
+lv_timer_t *ota_timer = NULL;
+
 
 static void HA_json_to_list(lv_obj_t *list_obj, ha_device_t *devices);
 static void HA_select_event_show(lv_event_t * e);
 
 
-void task_HA_state_monitor(lv_timer_t * timer){
+void HA_state_monitor_task(lv_timer_t * timer){
 
     if(lv_scr_act() != guider_ui.screen_HA)
     {
         return;
     }
-    ha_entity_t * p_target_slot = NULL;
+    u8_t p_target_slot = 5;
     switch (g_HAdevice_ctx.state_ha){
         case HA_STATE_IDLE:
             break;
 
         case HA_STATE_SEARCHING: 
-            ESP_LOGI(TAG, "HA设备状态: SEARCHING，正在搜索设备...");
             break;
 
         // util checked
         case HA_STATE_READY:
-            ESP_LOGI(TAG, "HA设备状态: READY，准备将设备添加到 UI 列表");
             HA_json_to_list(guider_ui.screen_HA_list_HA_show, &g_HAdevice_ctx);
             break;
 
         case HA_STATE_JSON_ERROR:
-            ESP_LOGE(TAG, "JSON 解析失败");
             g_HAdevice_ctx.state_ha = HA_STATE_IDLE;
             break;
 
 
         case HA_STATE_HTTP_ERROR:
-            ESP_LOGE(TAG, "HTTP 请求失败");
             g_HAdevice_ctx.state_ha = HA_STATE_IDLE;
             break;
 
         // after check
         case HA_STATE_DOWNLOADING:
-            ESP_LOGI(TAG, "正在将设备添加到UI列表...");
             break;
 
         case HA_STATE_SUCCESS :
-            ESP_LOGI(TAG, "设备已成功添加到UI列表");
             g_HAdevice_ctx.state_ha = HA_STATE_IDLE;
             break;
 
         case HA_STATE_FAILED:
-            ESP_LOGE(TAG, "设备添加到UI列表失败");
             g_HAdevice_ctx.state_ha = HA_STATE_IDLE;
             break;
 
         case HA_STATE_SHOW_CONT:
             lv_obj_add_flag(guider_ui.screen_HA_cont_HA_main, LV_OBJ_FLAG_HIDDEN);
             lv_obj_remove_flag(guider_ui.screen_HA_cont_HA_select, LV_OBJ_FLAG_HIDDEN);  
-            ESP_LOGI(TAG, "显示设备详情");
             g_HAdevice_ctx.state_ha = HA_STATE_HOLD_CONT;
             break;
         case HA_STATE_HOLD_CONT:
-            ESP_LOGI(TAG, "等待选择");
             break;
         case HA_STATE_CONT_RT:
-            p_target_slot = &g_ui_main_data.cont_rt;
+            p_target_slot = 0;
         break;
 
         case HA_STATE_CONT_RM:
-            p_target_slot = &g_ui_main_data.cont_rm;
+            p_target_slot = 1;
         break;
         
         case HA_STATE_CONT_RD:
-            p_target_slot = &g_ui_main_data.cont_rd;
+            p_target_slot = 2;
         break;
 
         case HA_STATE_CONT_MD:
-            p_target_slot = &g_ui_main_data.cont_md;
+            p_target_slot = 3;
         break;
 
         case HA_STATE_CLOSE_CONT:
             lv_obj_add_flag(guider_ui.screen_HA_cont_HA_select, LV_OBJ_FLAG_HIDDEN);
             lv_obj_remove_flag(guider_ui.screen_HA_cont_HA_main, LV_OBJ_FLAG_HIDDEN);
-            ESP_LOGI(TAG, "关闭设备详情");
             g_HAdevice_ctx.state_ha = HA_STATE_IDLE;
             break;
 
         default:
-            ESP_LOGE(TAG, "未知状态");
+            ESP_LOGE(TAG, "Unknown state");
             break;
     }
 
-    if (p_target_slot != NULL) {
-        ESP_LOGI("FSM", "状态机捕捉到位置状态 [%d]，开始统一盖章...", g_HAdevice_ctx.state_ha);
+    if (p_target_slot <5) {
         if (g_temp_selecting_index >= 0) {
-            *p_target_slot = g_HAdevice_ctx.entity[g_temp_selecting_index];
-            save_ui_sub_item_to_nvs(p_target_slot);
-            
-            ESP_LOGI("FSM", "中转指针中的数据id: [%s]， name:[%s],state:[%d]", p_target_slot->entity_id, p_target_slot->friendly_name, p_target_slot->is_on);
-
+            g_main_ui_device_data[p_target_slot] = g_HAdevice_ctx.entity[g_temp_selecting_index];
+            xQueueSend(nvs_save_queue, &p_target_slot, 0);
             g_temp_selecting_index = -1; 
         }
         g_HAdevice_ctx.state_ha = HA_STATE_CLOSE_CONT;
@@ -152,17 +146,57 @@ static void HA_json_to_list(lv_obj_t *list_obj, ha_device_t *devices) {
 
 }
 
-//OTA升级界面
-void task_OTA_state_monitor(lv_timer_t * timer)
+//OTA MQTT升级界面
+void OTA_MQTT_state_monitor_task(lv_timer_t * timer)
+{
+    if (lv_scr_act() != guider_ui.screen_OTA) {
+        return;
+    }
+    ota_mqtt_context_t received_state = g_ota_mqtt_ctx;
+    const char *s_state = "State: Unknown";
+    char buf_cur[50] = "Current: ";
+    char buf_las[50] = "Latest: ";
+    snprintf(buf_cur, sizeof(buf_cur), "Current: %s", received_state.current_ver);
+    switch (received_state.state)
+    {
+        case OTA_MQTT_STATE_IDLE:
+            s_state = "State: IDLE"; 
+            break;
+
+        // util checked
+        case OTA_MQTT_STATE_READY:
+            s_state = "State: Ready to update"; 
+            snprintf(buf_las, sizeof(buf_las), "Latest: %s", received_state.latest_ver);
+            break;
+
+        // after check
+        case OTA_MQTT_STATE_DOWNLOADING:
+            s_state = "State: Downloading";
+            break;
+
+        case OTA_MQTT_STATE_SUCCESS :
+            s_state = "State: Update successful";
+            break;
+
+        case OTA_MQTT_STATE_FAILED:
+            s_state = "State: Update failed";
+            break;
+
+        default:
+            s_state = "State: Unknown state";
+            break;
+    }
+    lv_label_set_text(guider_ui.screen_OTA_label_OTA_state, s_state);
+    lv_label_set_text(guider_ui.screen_OTA_label_OTA_info1, buf_cur);
+    lv_label_set_text(guider_ui.screen_OTA_label_OTA_info2, buf_las);
+}
+
+void OTA_state_monitor_task(lv_timer_t * timer)
 {
     if (lv_scr_act() != guider_ui.screen_OTA) {
         return;
     }
 
-    if (guider_ui.screen_OTA_label_OTA_state == NULL || guider_ui.screen_OTA_label_OTA_info1 == NULL || guider_ui.screen_OTA_label_OTA_info2 == NULL) {
-        ESP_LOGI("UI_EVENT", "OTA界面标签未初始化，无法更新状态显示");
-        return;
-    }
 
     static ota_state_t last_state = -1;
     if(g_ota_ctx.state != last_state) {
@@ -223,57 +257,59 @@ void custom_init(lv_ui *ui)
     /* Add your codes here */
 }
 
-void task_WIFI_state_monitor(lv_timer_t * timer){
+void WIFI_state_monitor_task(lv_timer_t * timer){
+
     if(lv_scr_act() != guider_ui.screen_wifi)
     {
         return;
     }
-    wifi_sm_t received_state;
-    if (xQueueReceive(g_ui_status_queue, &received_state, 0) == pdTRUE) {
-        const char *s_state = "State: Unknown";
-        char buf_ssid[48] = "SSID: ";
-        char buf_ip[48] = "IP: ";
-        switch (received_state.wifi_FSM_state){
-            case WIFI_STATE_IDLE:
-                ESP_LOGI(TAG, "WiFi状态: 空闲");
-                s_state = "State: Checking"; 
-                break;
+    wifi_sm_t received_state = g_wifi_sm;
+    const char *s_state = "State: Unknown";
+    char buf_ssid[48] = "SSID: ";
+    char buf_ip[48] = "IP: ";
+    switch (received_state.wifi_FSM_state){
+        case WIFI_STATE_IDLE:
+            s_state = "State: Checking"; 
+            break;
 
-            case WIFI_STATE_NONVS_CONFIG:
-                ESP_LOGI(TAG, "WiFi状态: 未配置");
-                s_state = "State: No WiFi Config";
-                break;
-            case WIFI_STATE_STA_CONNECTING: 
-                ESP_LOGI(TAG, "WiFi状态: 连接中");
-                s_state = "State: Connecting";
-                break;
-            case WIFI_STATE_PROVISIONING:
-                ESP_LOGI(TAG, "WiFi状态: 配网中");
-                s_state = "State: Provisioning";
-                snprintf(buf_ssid, sizeof(buf_ssid), "SSID: ESP32_AP");
-                snprintf(buf_ip, sizeof(buf_ip), "Password: 12345678");
-                break;
-            case WIFI_STATE_WAIT_BEGIN_PROVISIONING:
-                ESP_LOGI(TAG, "WiFi状态: 等待配网开始");
-                s_state = "State: No WiFi Config now, waiting for provisioning";
-                break;
-            case WIFI_STATE_CONNECTED:
-                ESP_LOGI(TAG, "WiFi状态: 已连接");
-                s_state = "State: Connected";
-                snprintf(buf_ssid, sizeof(buf_ssid), "SSID: %s", received_state.wifi_ssid);
-                snprintf(buf_ip, sizeof(buf_ip), "IP: %s", received_state.wifi_ip);
-                break;
-            case WIFI_STATE_DISCONNECTED:
-                ESP_LOGI(TAG, "WiFi状态: 已断开");
-                s_state = "State: Disconnected";
-                break;
-            default:
-                ESP_LOGE(TAG, "未知状态 %d", received_state.wifi_FSM_state);
-                break;
-        }     
-        lv_label_set_text(guider_ui.screen_wifi_label_wifi_state, s_state);
-        lv_label_set_text(guider_ui.screen_wifi_label_wifi_info1, buf_ssid);
-        lv_label_set_text(guider_ui.screen_wifi_label_wifi_info2, buf_ip);
-    }  
+        case WIFI_STATE_NONVS_CONFIG:
+            s_state = "State: No WiFi Config";
+            break;
+        case WIFI_STATE_STA_CONNECTING: 
+            s_state = "State: Connecting";
+            break;
+        case WIFI_STATE_PROVISIONING:
+            s_state = "State: Provisioning";
+            snprintf(buf_ssid, sizeof(buf_ssid), "SSID: ESP32_AP");
+            snprintf(buf_ip, sizeof(buf_ip), "Password: 12345678");
+            break;
+        case WIFI_STATE_WAIT_BEGIN_PROVISIONING:
+            s_state = "State: No WiFi Config now, waiting for provisioning";
+            break;
+        case WIFI_STATE_CONNECTED:
+            s_state = "State: Connected";
+            snprintf(buf_ssid, sizeof(buf_ssid), "SSID: %s", received_state.wifi_ssid);
+            snprintf(buf_ip, sizeof(buf_ip), "IP: %s", received_state.wifi_ip);
+            break;
+        case WIFI_STATE_DISCONNECTED:
+            s_state = "State: Disconnected";
+            break;
+        default:
+            s_state = "State: Unknown state";
+            break;
+    } 
+    
+    lv_label_set_text(guider_ui.screen_wifi_label_wifi_state, s_state);
+    lv_label_set_text(guider_ui.screen_wifi_label_wifi_info1, buf_ssid);
+    lv_label_set_text(guider_ui.screen_wifi_label_wifi_info2, buf_ip);
 }
 
+void all_timer_creat_init()
+{
+    wifi_timer = lv_timer_create(WIFI_state_monitor_task, 500, NULL);
+    lv_timer_pause(wifi_timer);
+    ota_timer = lv_timer_create(OTA_MQTT_state_monitor_task, 500, NULL);
+    lv_timer_pause(ota_timer);
+    ha_timer = lv_timer_create(HA_state_monitor_task, 100, NULL);
+    lv_timer_pause(ha_timer);
+}

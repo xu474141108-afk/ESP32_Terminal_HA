@@ -39,7 +39,9 @@ typedef struct {
 } ha_device_t;
 
 
+
 extern ha_device_t g_HAdevice_ctx;
+extern ha_entity_t g_main_ui_device_data[4];
 
 void get_ha_states_to_psram(void);
 void ha_http_control_get_states_to_psram();

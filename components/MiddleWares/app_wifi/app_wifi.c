@@ -7,11 +7,12 @@
 #include "freertos/task.h"
 #include "nvs_flash.h"
 #include "esp_netif.h"
-
 #include "esp_wifi.h"
 #include "esp_http_server.h"
 //其他文件
 #include "app_wifi.h"
+#include "storage_manager.h"
+#include "ha_ws_client.h"
 
 
 
@@ -19,7 +20,8 @@ static const char *TAG = "app_wifi";
 wifi_sm_t g_wifi_sm;
 static int s_retry_num = 0;
 httpd_handle_t server = NULL;
-QueueHandle_t g_ui_status_queue = NULL;
+
+
 wifi_config_t ap_cfg = {
                 .ap = { 
                     .ssid = "ESP32_AP", 
@@ -79,11 +81,15 @@ static esp_err_t config_post_handler(httpd_req_t *req) {
      if (httpd_query_key_value(buf, "ha_ip", ha_ip, sizeof(ha_ip)) == ESP_OK &&
         httpd_query_key_value(buf, "ha_token", ha_token, sizeof(ha_token)) == ESP_OK) {
         if(strlen(ha_token) > 0) {
-            // 保存到NVS
-           
+            strncpy(g_ha_ws_client_config.ha_token, ha_token, sizeof(g_ha_ws_client_config.ha_token) - 1);
+            g_ha_ws_client_config.ha_token[sizeof(g_ha_ws_client_config.ha_token) - 1] = '\0'; // 防止溢出
+            ha_date_item_save(g_ha_ws_client_config.ha_token);
         }
         if(strlen(ha_ip) > 0) {
-            // 保存到NVS
+            strncpy(g_ha_ws_client_config.ha_ip, ha_ip, sizeof(g_ha_ws_client_config.ha_ip) - 1);
+            g_ha_ws_client_config.ha_ip[sizeof(g_ha_ws_client_config.ha_ip) - 1] = '\0'; // 防止溢出
+            ha_date_item_save(g_ha_ws_client_config.ha_ip);
+            esp_event_post(HA_ACTION_EVENTS, HA_TOKEN_IP_UPDATE, NULL, 0, portMAX_DELAY);
         }
     } else {
         httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "HA IP or Token missing");
@@ -133,7 +139,6 @@ void webserver_begin() {
         httpd_register_uri_handler(server, &post_uri);
     }
     g_wifi_sm.wifi_FSM_state = WIFI_STATE_PROVISIONING;
-    xQueueSend(g_ui_status_queue, &g_wifi_sm, 0);
 }
 
 static void wifi_retry_backoff_task(void *param)
@@ -164,7 +169,6 @@ static void event_handler(void* arg, esp_event_base_t event_base,int32_t event_i
         if (errt == ESP_ERR_WIFI_SSID) {
             ESP_LOGW(TAG, "No WiFi Config found，need to configure");
             g_wifi_sm.wifi_FSM_state = WIFI_STATE_NONVS_CONFIG;
-            xQueueSend(g_ui_status_queue, &g_wifi_sm, 0);
         }
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
         if (s_retry_num < 20) {
@@ -172,11 +176,9 @@ static void event_handler(void* arg, esp_event_base_t event_base,int32_t event_i
             ESP_LOGI(TAG, "WiFi disconnected, retry, count:%d", s_retry_num);
             xTaskCreate(wifi_retry_backoff_task, "wifi_backoff", 4096, NULL, 3, NULL);
             g_wifi_sm.wifi_FSM_state = WIFI_STATE_STA_CONNECTING;
-            xQueueSend(g_ui_status_queue, &g_wifi_sm, 0);
         } else {
             ESP_LOGW(TAG, "No WiFi disconnected, need to configure");
             g_wifi_sm.wifi_FSM_state = WIFI_STATE_DISCONNECTED;
-            xQueueSend(g_ui_status_queue, &g_wifi_sm, 0);
         }
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         
@@ -191,7 +193,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,int32_t event_i
         strncpy(g_wifi_sm.wifi_ssid, (const char*)sta_conf.sta.ssid, sizeof(g_wifi_sm.wifi_ssid)-1);
         g_wifi_sm.wifi_ssid[sizeof(g_wifi_sm.wifi_ssid)-1] = '\0';
         s_retry_num = 0;
-        xQueueSend(g_ui_status_queue, &g_wifi_sm, 0);
+
         
         // if WiFi is in APSTA mode, switch to STA only mode to free up AP resources
         wifi_mode_t mode;
@@ -211,7 +213,6 @@ static void event_handler(void* arg, esp_event_base_t event_base,int32_t event_i
 void wifi_init(void)
 {
     ESP_LOGI(TAG, "WIFI INIT BEGIN");
-    g_ui_status_queue = xQueueCreate(5, sizeof(wifi_sm_t));
     //low-level initialization WiFi 
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
@@ -237,3 +238,4 @@ void wifi_init(void)
     ESP_ERROR_CHECK(esp_wifi_start());  
     ESP_LOGI(TAG, "WIFI INIT FINISH");
 }
+

@@ -28,8 +28,6 @@ extern wifi_sm_t g_wifi_sm;
 
 void wifi_init(void);
 void webserver_begin(void);
-extern EventGroupHandle_t s_wifi_event_group;
-extern QueueHandle_t g_ui_status_queue;
 
 
 #ifdef __cplusplus

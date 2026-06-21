@@ -13,6 +13,7 @@
 #define HA_TEST_STATES_URL "http://homeassistant.local:8123/api/states"
 #define HA_TOKEN "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJhYTcwZmE1OWQ2NjI0ZDFiYWVkNjFiM2MxZTU3MDdlZSIsImlhdCI6MTc3NzI5Mjk5NywiZXhwIjoyMDkyNjUyOTk3fQ.Z5T5IGwJm6M56h8j40y3HeuLgPwIlMwR1bQ0DxRIinI"
 ha_device_t g_HAdevice_ctx;
+ha_entity_t g_main_ui_device_data[4] = {0};
 
 static void http_cleanup(esp_http_client_handle_t client);
 
@@ -91,7 +92,7 @@ void get_ha_states_to_psram() {
             const char *eid = eid_obj->valuestring;
 
             // 筛选条件：只取 light 和 switch 设备
-            if (strstr(eid, "light.") || strstr(eid, "switch.")) {
+            if (strstr(eid, "light.") || strstr(eid, "switch.")||strstr(eid, "input_button.")) {
                 if (g_HAdevice_ctx.device_count >= MAX_DEVICES) break;
 
                 cJSON *attrs = cJSON_GetObjectItem(item, "attributes");

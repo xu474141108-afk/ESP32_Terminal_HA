@@ -18,6 +18,7 @@
 #include "app_wifi.h"
 #include "ha_http_req.h"
 #include "ha_ws_client.h"
+#include "OTA_MQTT.h"
 #include "OTA.h"
 #include "storage_manager.h"
 #endif 

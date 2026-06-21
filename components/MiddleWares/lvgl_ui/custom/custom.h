@@ -13,29 +13,25 @@
 extern "C" {
 #endif
 #include "gui_guider.h"
-#include "ha_http_req.h"
-
-#define MAX_ADDED_DEVICES 4
-
-typedef struct {
-    ha_entity_t cont_rt;
-    ha_entity_t cont_rm;
-    ha_entity_t cont_rd;
-    ha_entity_t cont_md;
-} UI_Main_cout_item_t;
 
 
 
-extern UI_Main_cout_item_t g_ui_main_data;
+extern lv_timer_t *wifi_timer;
+extern lv_timer_t *ha_timer;
+extern lv_timer_t *ota_timer;
+
 
 void custom_init(lv_ui *ui);
 //OTA升级界面
-void task_OTA_state_monitor(lv_timer_t * timer);
-
+void OTA_state_monitor_task(lv_timer_t * timer);
+void OTA_MQTT_state_monitor_task(lv_timer_t * timer);
 //HA设备操作界面
-void task_HA_state_monitor(lv_timer_t * timer);
+void HA_state_monitor_task(lv_timer_t * timer);
 
-void task_WIFI_state_monitor(lv_timer_t * timer);
+void WIFI_state_monitor_task(lv_timer_t * timer);
+
+
+void all_timer_creat_init();
 #ifdef __cplusplus
 }
 #endif

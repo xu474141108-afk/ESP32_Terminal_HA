@@ -19,7 +19,7 @@
 #include "OTA.h"
 
 
-#define CONFIG_FIRMWARE_UPG_URL "http://192.168.1.130:8000/version.json"
+#define CONFIG_FIRMWARE_UPG_URL "http://192.168.1.136:8000/version.json"
 
 #define CONFIG_EXAMPLE_OTA_RECV_TIMEOUT 5000
 #define CONFIG_EXAMPLE_SKIP_VERSION_CHECK 1
@@ -75,12 +75,12 @@ static void OTA_version_check_task(void *pvParameters)
         ESP_LOGE(TAG, "Failed to open HTTP connection: %s", esp_err_to_name(err));
         http_cleanup(http_OTA_check_client);
         g_ota_ctx.state = OTA_STATE_HTTP_ERROR;
-        vTaskDelete(NULL); // 任务结束自毁
+        vTaskDelete(NULL);
         return;
     }
     esp_http_client_fetch_headers(http_OTA_check_client);
     int len = esp_http_client_read(http_OTA_check_client, ota_write_data, BUFFSIZE);
-    ota_write_data[len] = '\0'; // 必须截断字符串给 cJSON 用
+    ota_write_data[len] = '\0'; 
 
     cJSON *root = cJSON_Parse(ota_write_data);
     if (root)

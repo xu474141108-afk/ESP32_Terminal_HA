@@ -29,6 +29,7 @@ lv_ui guider_ui;
 static _lock_t lvgl_api_lock;
 lv_display_t *display = NULL;
 
+
 static void example_lvgl_port_task(void *arg)
 {
     ESP_LOGI(TAG, "Starting LVGL task");
@@ -38,9 +39,7 @@ static void example_lvgl_port_task(void *arg)
     lv_display_set_default(display);    
     setup_ui(&guider_ui); 
     _lock_release(&lvgl_api_lock);      // 开门放行
-    lv_timer_create(task_OTA_state_monitor, 100, NULL);
-    lv_timer_create(task_HA_state_monitor, 100, NULL);
-    lv_timer_create(task_WIFI_state_monitor, 100, NULL);
+
     ESP_LOGI(TAG, "Starting ui task");
     while (1) {
         _lock_acquire(&lvgl_api_lock);
@@ -89,7 +88,7 @@ static void example_lvgl_touch_cb(lv_indev_t *indev, lv_indev_data_t *data)
         data->point.x = touchpad_x[0];
         data->point.y = touchpad_y[0];
         data->state = LV_INDEV_STATE_PRESSED;
-        //ESP_LOGW("TOUCH_DATA", "X: %u, Y: %u", data->point.x, data->point.y);
+        // ESP_LOGW("TOUCH_DATA", "X: %u, Y: %u", data->point.x, data->point.y);
     } else {
         data->state = LV_INDEV_STATE_RELEASED;
     }
@@ -100,6 +99,7 @@ static void example_increase_lvgl_tick(void *arg)
     /* Tell LVGL how many milliseconds has elapsed */
     lv_tick_inc(EXAMPLE_LVGL_TICK_PERIOD_MS);
 }
+
 
 void lvgl_port_init(lvgl_panel_t *panel)
 {
@@ -151,5 +151,7 @@ void lvgl_port_init(lvgl_panel_t *panel)
     xTaskCreatePinnedToCore(example_lvgl_port_task, "LVGL", 16384, NULL, 5, NULL, 0);
 
     ESP_LOGI(TAG, "Display LVGL Meter Widget");
+
+    all_timer_creat_init();
 }
 
