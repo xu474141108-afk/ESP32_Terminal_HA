@@ -38,7 +38,7 @@ enum xpt2046_registers
     TEMP1       = 0xF6 | XPT2046_PD_BITS, // 1      111   0       1     1       X
 };
 
-#if CONFIG_XPT2046_ENABLE_LOCKING   //后期判断是否开启：如果出现多线程访问问题 可以开启锁机制
+#if CONFIG_XPT2046_ENABLE_LOCKING   
     #define XPT2046_LOCK(lock) portENTER_CRITICAL(lock)
     #define XPT2046_UNLOCK(lock) portEXIT_CRITICAL(lock)
 #else

@@ -205,30 +205,6 @@ void setup_scr_screen_HA(lv_ui *ui)
     lv_obj_set_style_text_opa(ui->screen_HA_btn_HA_back, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_align(ui->screen_HA_btn_HA_back, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
 
-    //Write codes screen_HA_label_HA_nota
-    ui->screen_HA_label_HA_nota = lv_label_create(ui->screen_HA_cont_HA_top);
-    lv_obj_set_pos(ui->screen_HA_label_HA_nota, 120, 5);
-    lv_obj_set_size(ui->screen_HA_label_HA_nota, 180, 30);
-    lv_obj_add_flag(ui->screen_HA_label_HA_nota, LV_OBJ_FLAG_HIDDEN);
-    lv_label_set_text(ui->screen_HA_label_HA_nota, "");
-    lv_label_set_long_mode(ui->screen_HA_label_HA_nota, LV_LABEL_LONG_WRAP);
-
-    //Write style for screen_HA_label_HA_nota, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
-    lv_obj_set_style_border_width(ui->screen_HA_label_HA_nota, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_radius(ui->screen_HA_label_HA_nota, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_text_color(ui->screen_HA_label_HA_nota, lv_color_hex(0x000000), LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui->screen_HA_label_HA_nota, &lv_font_montserratMedium_22, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui->screen_HA_label_HA_nota, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_text_letter_space(ui->screen_HA_label_HA_nota, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_text_line_space(ui->screen_HA_label_HA_nota, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_text_align(ui->screen_HA_label_HA_nota, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui->screen_HA_label_HA_nota, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_pad_top(ui->screen_HA_label_HA_nota, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_pad_right(ui->screen_HA_label_HA_nota, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_pad_bottom(ui->screen_HA_label_HA_nota, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_pad_left(ui->screen_HA_label_HA_nota, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_shadow_width(ui->screen_HA_label_HA_nota, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-
     //Write codes screen_HA_cont_HA_select
     ui->screen_HA_cont_HA_select = lv_obj_create(ui->screen_HA);
     lv_obj_set_pos(ui->screen_HA_cont_HA_select, 15, 58);

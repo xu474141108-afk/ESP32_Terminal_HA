@@ -1,1 +1,1 @@
-GEN_CSRCS += _setup_RGB565A8_40x40.c
+GEN_CSRCS += _switch_off_RGB565A8_40x40.c _swtich_on_RGB565A8_40x40 _setup_RGB565A8_40x40.c _sun_RGB565A8_100x100.c _wifi_RGB565A8_20x20.c screen_OTA_img_OTAwifi.c

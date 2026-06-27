@@ -16,13 +16,11 @@ void app_main(void)
     bsp_display_init();
     vTaskDelay(pdMS_TO_TICKS(1000));
     wifi_init();
-    vTaskDelay(pdMS_TO_TICKS(2000));
-    // ota_mqtt_init();
+    vTaskDelay(pdMS_TO_TICKS(4000));
+    //ota_mqtt_init();
     websocket_app_start();
     
     while (1) {
         vTaskDelay(pdMS_TO_TICKS(8000));
-        // ws_control_entity("switch.lemesh_sw0a04_63b3_switch", "toggle");
-        ESP_LOGD(TAG,"TESTING");
     }
 }

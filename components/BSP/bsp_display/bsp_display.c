@@ -95,8 +95,6 @@ void bsp_display_brightness(int brightness)
 
 static void bsp_display_LCD_init(void)
 {
-    // bsp_display_bk_init();
-
     gpio_config_t bk_gpio_config = {
     .mode = GPIO_MODE_OUTPUT,
     .pull_up_en = GPIO_PULLUP_ENABLE, // 加上上拉
@@ -146,8 +144,6 @@ static void bsp_display_LCD_init(void)
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
     gpio_set_level(LCD_BL_GPIO_NUM, LCD_BK_LIGHT_ON_LEVEL);
     ESP_LOGI(TAG, "Display initialized successfully");
-
-    // bsp_display_brightness(LCD_LIGHT_LEVEL);   
 }
 
 

@@ -6,15 +6,15 @@ extern "C" {
 
 ESP_EVENT_DECLARE_BASE(HA_ACTION_EVENTS);
 enum {
-    HA_SYSTEM_CONNECTED,
-    HA_DATA_RECEIVED,      // 在这里定义你的事件 ID
-    LVGL_WS_BUTTON_RT_TOGGLE,
-    LVGL_WS_BUTTON_RM_TOGGLE,
-    LVGL_WS_BUTTON_RD_TOGGLE,
-    LVGL_WS_BUTTON_MD_TOGGLE,
+    HA_WS_SYSTEM_CONNECTED,
+    HA_WS_DATA_RECEIVED,      
     HA_WS_STATE_KICKED_OUT,
-    HA_TOKEN_IP_UPDATE,
-    LVGL_REQ_ALL_DATA,
+    HA_WS_TOKEN_IP_UPDATE,
+    HA_WS_LVGL_BUTTON_RT_TOGGLE,
+    HA_WS_LVGL_BUTTON_RM_TOGGLE,
+    HA_WS_LVGL_BUTTON_RD_TOGGLE,
+    HA_WS_LVGL_BUTTON_MD_TOGGLE,
+    HA_WS_LVGL_REQ_ALL_DATA,
 };
 
 
@@ -43,11 +43,15 @@ typedef struct {
 } ha_ws_client_config_t;
 
 typedef struct {
+    char temp[32];
+    char hum[32];
+} weather_data_t;
+
+typedef struct {
     char entity_id[64];
     char friendly_name[64];
     char state[64];
 } ha_entity_t;
-
 
 typedef struct {
     ha_state_t state_ha;
@@ -55,12 +59,14 @@ typedef struct {
     int device_count;
 } ha_device_t;
 
+
+
 extern ha_device_t g_HAdevice_ctx;
 extern ha_entity_t g_main_ui_device_data[6];
 extern ha_ws_client_config_t g_ha_ws_client_config;
+extern weather_data_t entity_weather_data;
 
-
-void get_ha_states_to_psram(void);
+void ha_rest_get_states_to_psram(void);
 void websocket_app_start();
 
 

@@ -17,9 +17,9 @@ static void nvs_task(void *pvParameters) {
     uint8_t slot_to_save;
     while (1) {
         if (xQueueReceive(nvs_save_queue, &slot_to_save, portMAX_DELAY) == pdPASS) {
-            main_ui_item_save(&g_main_ui_device_data[slot_to_save], slot_to_save);
-            ESP_LOGI("NVS_TASK", "成功保存 Slot %d", slot_to_save);
+            main_ui_item_save(&g_main_ui_device_data[slot_to_save], slot_to_save);      
         }
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
 

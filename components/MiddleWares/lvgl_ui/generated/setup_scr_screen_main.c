@@ -62,26 +62,39 @@ void setup_scr_screen_main(lv_ui *ui)
 
     //Write codes screen_main_lab_cont_md
     ui->screen_main_lab_cont_md = lv_label_create(ui->screen_main_cont_md);
-    lv_obj_set_pos(ui->screen_main_lab_cont_md, 20, 6);
-    lv_obj_set_size(ui->screen_main_lab_cont_md, 60, 21);
+    lv_obj_set_pos(ui->screen_main_lab_cont_md, 5, 4);
+    lv_obj_set_size(ui->screen_main_lab_cont_md, 90, 20);
     lv_label_set_text(ui->screen_main_lab_cont_md, "\n");
-    lv_label_set_long_mode(ui->screen_main_lab_cont_md, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    lv_label_set_long_mode(ui->screen_main_lab_cont_md, LV_LABEL_LONG_SCROLL);
 
     //Write style for screen_main_lab_cont_md, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
     lv_obj_set_style_border_width(ui->screen_main_lab_cont_md, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_radius(ui->screen_main_lab_cont_md, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(ui->screen_main_lab_cont_md, lv_color_hex(0xffffff), LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui->screen_main_lab_cont_md, &lv_font_montserratMedium_16, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui->screen_main_lab_cont_md, &lv_font_montserratMedium_12, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui->screen_main_lab_cont_md, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_letter_space(ui->screen_main_lab_cont_md, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_line_space(ui->screen_main_lab_cont_md, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_text_align(ui->screen_main_lab_cont_md, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(ui->screen_main_lab_cont_md, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui->screen_main_lab_cont_md, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_pad_top(ui->screen_main_lab_cont_md, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_pad_right(ui->screen_main_lab_cont_md, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_pad_bottom(ui->screen_main_lab_cont_md, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_pad_left(ui->screen_main_lab_cont_md, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_shadow_width(ui->screen_main_lab_cont_md, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_main_img_cont_md
+    ui->screen_main_img_cont_md = lv_image_create(ui->screen_main_cont_md);
+    lv_obj_set_pos(ui->screen_main_img_cont_md, 30, 18);
+    lv_obj_set_size(ui->screen_main_img_cont_md, 40, 40);
+    lv_obj_add_flag(ui->screen_main_img_cont_md, LV_OBJ_FLAG_CLICKABLE);
+    lv_image_set_src(ui->screen_main_img_cont_md, &_switch_off_RGB565A8_40x40);
+    lv_image_set_pivot(ui->screen_main_img_cont_md, 50,50);
+    lv_image_set_rotation(ui->screen_main_img_cont_md, 0);
+
+    //Write style for screen_main_img_cont_md, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_image_recolor_opa(ui->screen_main_img_cont_md, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_image_opa(ui->screen_main_img_cont_md, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
 
     //Write codes screen_main_cont_rd
     ui->screen_main_cont_rd = lv_obj_create(ui->screen_main);
@@ -114,26 +127,39 @@ void setup_scr_screen_main(lv_ui *ui)
 
     //Write codes screen_main_lab_cont_rd
     ui->screen_main_lab_cont_rd = lv_label_create(ui->screen_main_cont_rd);
-    lv_obj_set_pos(ui->screen_main_lab_cont_rd, 20, 6);
-    lv_obj_set_size(ui->screen_main_lab_cont_rd, 60, 21);
+    lv_obj_set_pos(ui->screen_main_lab_cont_rd, 5, 4);
+    lv_obj_set_size(ui->screen_main_lab_cont_rd, 90, 20);
     lv_label_set_text(ui->screen_main_lab_cont_rd, "\n");
-    lv_label_set_long_mode(ui->screen_main_lab_cont_rd, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    lv_label_set_long_mode(ui->screen_main_lab_cont_rd, LV_LABEL_LONG_SCROLL);
 
     //Write style for screen_main_lab_cont_rd, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
     lv_obj_set_style_border_width(ui->screen_main_lab_cont_rd, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_radius(ui->screen_main_lab_cont_rd, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(ui->screen_main_lab_cont_rd, lv_color_hex(0xffffff), LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui->screen_main_lab_cont_rd, &lv_font_montserratMedium_16, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui->screen_main_lab_cont_rd, &lv_font_montserratMedium_12, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui->screen_main_lab_cont_rd, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_letter_space(ui->screen_main_lab_cont_rd, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_line_space(ui->screen_main_lab_cont_rd, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_text_align(ui->screen_main_lab_cont_rd, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(ui->screen_main_lab_cont_rd, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui->screen_main_lab_cont_rd, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_pad_top(ui->screen_main_lab_cont_rd, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_pad_right(ui->screen_main_lab_cont_rd, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_pad_bottom(ui->screen_main_lab_cont_rd, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_pad_left(ui->screen_main_lab_cont_rd, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_shadow_width(ui->screen_main_lab_cont_rd, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_main_img_cont_rd
+    ui->screen_main_img_cont_rd = lv_image_create(ui->screen_main_cont_rd);
+    lv_obj_set_pos(ui->screen_main_img_cont_rd, 30, 20);
+    lv_obj_set_size(ui->screen_main_img_cont_rd, 40, 40);
+    lv_obj_add_flag(ui->screen_main_img_cont_rd, LV_OBJ_FLAG_CLICKABLE);
+    lv_image_set_src(ui->screen_main_img_cont_rd, &_switch_off_RGB565A8_40x40);
+    lv_image_set_pivot(ui->screen_main_img_cont_rd, 50,50);
+    lv_image_set_rotation(ui->screen_main_img_cont_rd, 0);
+
+    //Write style for screen_main_img_cont_rd, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_image_recolor_opa(ui->screen_main_img_cont_rd, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_image_opa(ui->screen_main_img_cont_rd, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
 
     //Write codes screen_main_cont_rm
     ui->screen_main_cont_rm = lv_obj_create(ui->screen_main);
@@ -166,26 +192,39 @@ void setup_scr_screen_main(lv_ui *ui)
 
     //Write codes screen_main_lab_cont_rm
     ui->screen_main_lab_cont_rm = lv_label_create(ui->screen_main_cont_rm);
-    lv_obj_set_pos(ui->screen_main_lab_cont_rm, 20, 6);
-    lv_obj_set_size(ui->screen_main_lab_cont_rm, 60, 21);
+    lv_obj_set_pos(ui->screen_main_lab_cont_rm, 5, 4);
+    lv_obj_set_size(ui->screen_main_lab_cont_rm, 90, 20);
     lv_label_set_text(ui->screen_main_lab_cont_rm, "");
-    lv_label_set_long_mode(ui->screen_main_lab_cont_rm, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    lv_label_set_long_mode(ui->screen_main_lab_cont_rm, LV_LABEL_LONG_SCROLL);
 
     //Write style for screen_main_lab_cont_rm, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
     lv_obj_set_style_border_width(ui->screen_main_lab_cont_rm, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_radius(ui->screen_main_lab_cont_rm, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(ui->screen_main_lab_cont_rm, lv_color_hex(0xffffff), LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui->screen_main_lab_cont_rm, &lv_font_montserratMedium_16, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui->screen_main_lab_cont_rm, &lv_font_montserratMedium_12, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui->screen_main_lab_cont_rm, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_letter_space(ui->screen_main_lab_cont_rm, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_line_space(ui->screen_main_lab_cont_rm, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_text_align(ui->screen_main_lab_cont_rm, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(ui->screen_main_lab_cont_rm, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui->screen_main_lab_cont_rm, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_pad_top(ui->screen_main_lab_cont_rm, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_pad_right(ui->screen_main_lab_cont_rm, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_pad_bottom(ui->screen_main_lab_cont_rm, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_pad_left(ui->screen_main_lab_cont_rm, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_shadow_width(ui->screen_main_lab_cont_rm, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_main_img_cont_rm
+    ui->screen_main_img_cont_rm = lv_image_create(ui->screen_main_cont_rm);
+    lv_obj_set_pos(ui->screen_main_img_cont_rm, 30, 20);
+    lv_obj_set_size(ui->screen_main_img_cont_rm, 40, 40);
+    lv_obj_add_flag(ui->screen_main_img_cont_rm, LV_OBJ_FLAG_CLICKABLE);
+    lv_image_set_src(ui->screen_main_img_cont_rm, &_switch_off_RGB565A8_40x40);
+    lv_image_set_pivot(ui->screen_main_img_cont_rm, 50,50);
+    lv_image_set_rotation(ui->screen_main_img_cont_rm, 0);
+
+    //Write style for screen_main_img_cont_rm, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_image_recolor_opa(ui->screen_main_img_cont_rm, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_image_opa(ui->screen_main_img_cont_rm, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
 
     //Write codes screen_main_cont_rt
     ui->screen_main_cont_rt = lv_obj_create(ui->screen_main);
@@ -218,26 +257,39 @@ void setup_scr_screen_main(lv_ui *ui)
 
     //Write codes screen_main_lab_cont_rt
     ui->screen_main_lab_cont_rt = lv_label_create(ui->screen_main_cont_rt);
-    lv_obj_set_pos(ui->screen_main_lab_cont_rt, 20, 6);
-    lv_obj_set_size(ui->screen_main_lab_cont_rt, 60, 21);
+    lv_obj_set_pos(ui->screen_main_lab_cont_rt, 5, 4);
+    lv_obj_set_size(ui->screen_main_lab_cont_rt, 90, 20);
     lv_label_set_text(ui->screen_main_lab_cont_rt, "");
-    lv_label_set_long_mode(ui->screen_main_lab_cont_rt, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    lv_label_set_long_mode(ui->screen_main_lab_cont_rt, LV_LABEL_LONG_SCROLL);
 
     //Write style for screen_main_lab_cont_rt, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
     lv_obj_set_style_border_width(ui->screen_main_lab_cont_rt, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_radius(ui->screen_main_lab_cont_rt, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(ui->screen_main_lab_cont_rt, lv_color_hex(0xffffff), LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui->screen_main_lab_cont_rt, &lv_font_montserratMedium_16, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui->screen_main_lab_cont_rt, &lv_font_montserratMedium_12, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui->screen_main_lab_cont_rt, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_letter_space(ui->screen_main_lab_cont_rt, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_text_line_space(ui->screen_main_lab_cont_rt, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_text_align(ui->screen_main_lab_cont_rt, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(ui->screen_main_lab_cont_rt, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui->screen_main_lab_cont_rt, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_pad_top(ui->screen_main_lab_cont_rt, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_pad_right(ui->screen_main_lab_cont_rt, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_pad_bottom(ui->screen_main_lab_cont_rt, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_pad_left(ui->screen_main_lab_cont_rt, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_shadow_width(ui->screen_main_lab_cont_rt, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_main_img_cont_rt
+    ui->screen_main_img_cont_rt = lv_image_create(ui->screen_main_cont_rt);
+    lv_obj_set_pos(ui->screen_main_img_cont_rt, 30, 20);
+    lv_obj_set_size(ui->screen_main_img_cont_rt, 40, 40);
+    lv_obj_add_flag(ui->screen_main_img_cont_rt, LV_OBJ_FLAG_CLICKABLE);
+    lv_image_set_src(ui->screen_main_img_cont_rt, &_switch_off_RGB565A8_40x40);
+    lv_image_set_pivot(ui->screen_main_img_cont_rt, 50,50);
+    lv_image_set_rotation(ui->screen_main_img_cont_rt, 0);
+
+    //Write style for screen_main_img_cont_rt, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_image_recolor_opa(ui->screen_main_img_cont_rt, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_image_opa(ui->screen_main_img_cont_rt, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
 
     //Write codes screen_main_cont_setup
     ui->screen_main_cont_setup = lv_obj_create(ui->screen_main);
@@ -333,28 +385,100 @@ void setup_scr_screen_main(lv_ui *ui)
     lv_obj_set_style_shadow_offset_x(ui->screen_main_cont_weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
     lv_obj_set_style_shadow_offset_y(ui->screen_main_cont_weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
-    //Write codes screen_main_label_weather
-    ui->screen_main_label_weather = lv_label_create(ui->screen_main_cont_weather);
-    lv_obj_set_pos(ui->screen_main_label_weather, 10, 6);
-    lv_obj_set_size(ui->screen_main_label_weather, 160, 18);
-    lv_label_set_text(ui->screen_main_label_weather, "Fri");
-    lv_label_set_long_mode(ui->screen_main_label_weather, LV_LABEL_LONG_CLIP);
+    //Write codes screen_main_label_date
+    ui->screen_main_label_date = lv_label_create(ui->screen_main_cont_weather);
+    lv_obj_set_pos(ui->screen_main_label_date, 10, 5);
+    lv_obj_set_size(ui->screen_main_label_date, 140, 18);
+    lv_label_set_text(ui->screen_main_label_date, "Fri");
+    lv_label_set_long_mode(ui->screen_main_label_date, LV_LABEL_LONG_WRAP);
 
-    //Write style for screen_main_label_weather, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
-    lv_obj_set_style_border_width(ui->screen_main_label_weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_radius(ui->screen_main_label_weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_text_color(ui->screen_main_label_weather, lv_color_hex(0xffffff), LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui->screen_main_label_weather, &lv_font_montserratMedium_16, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui->screen_main_label_weather, 192, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_text_letter_space(ui->screen_main_label_weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_text_line_space(ui->screen_main_label_weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_text_align(ui->screen_main_label_weather, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui->screen_main_label_weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_pad_top(ui->screen_main_label_weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_pad_right(ui->screen_main_label_weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_pad_bottom(ui->screen_main_label_weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_pad_left(ui->screen_main_label_weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-    lv_obj_set_style_shadow_width(ui->screen_main_label_weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    //Write style for screen_main_label_date, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_border_width(ui->screen_main_label_date, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->screen_main_label_date, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui->screen_main_label_date, lv_color_hex(0xffffff), LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui->screen_main_label_date, &lv_font_montserratMedium_16, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui->screen_main_label_date, 192, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_letter_space(ui->screen_main_label_date, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_line_space(ui->screen_main_label_date, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(ui->screen_main_label_date, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui->screen_main_label_date, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_top(ui->screen_main_label_date, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_right(ui->screen_main_label_date, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_bottom(ui->screen_main_label_date, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_left(ui->screen_main_label_date, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_width(ui->screen_main_label_date, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_main_img_cont_weather
+    ui->screen_main_img_cont_weather = lv_image_create(ui->screen_main_cont_weather);
+    lv_obj_set_pos(ui->screen_main_img_cont_weather, 8, 28);
+    lv_obj_set_size(ui->screen_main_img_cont_weather, 100, 100);
+    lv_obj_add_flag(ui->screen_main_img_cont_weather, LV_OBJ_FLAG_CLICKABLE);
+    lv_image_set_src(ui->screen_main_img_cont_weather, &_sun_RGB565A8_100x100);
+    lv_image_set_pivot(ui->screen_main_img_cont_weather, 50,50);
+    lv_image_set_rotation(ui->screen_main_img_cont_weather, 0);
+
+    //Write style for screen_main_img_cont_weather, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_image_recolor_opa(ui->screen_main_img_cont_weather, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_image_opa(ui->screen_main_img_cont_weather, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_main_label_temp
+    ui->screen_main_label_temp = lv_label_create(ui->screen_main_cont_weather);
+    lv_obj_set_pos(ui->screen_main_label_temp, 114, 37);
+    lv_obj_set_size(ui->screen_main_label_temp, 60, 18);
+    lv_label_set_text(ui->screen_main_label_temp, "28℃");
+    lv_label_set_long_mode(ui->screen_main_label_temp, LV_LABEL_LONG_WRAP);
+
+    //Write style for screen_main_label_temp, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_border_width(ui->screen_main_label_temp, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->screen_main_label_temp, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui->screen_main_label_temp, lv_color_hex(0xffffff), LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui->screen_main_label_temp, &lv_font_montserratMedium_16, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui->screen_main_label_temp, 192, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_letter_space(ui->screen_main_label_temp, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_line_space(ui->screen_main_label_temp, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(ui->screen_main_label_temp, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui->screen_main_label_temp, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_top(ui->screen_main_label_temp, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_right(ui->screen_main_label_temp, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_bottom(ui->screen_main_label_temp, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_left(ui->screen_main_label_temp, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_width(ui->screen_main_label_temp, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_main_img_cont_wifi
+    ui->screen_main_img_cont_wifi = lv_image_create(ui->screen_main_cont_weather);
+    lv_obj_set_pos(ui->screen_main_img_cont_wifi, 165, 120);
+    lv_obj_set_size(ui->screen_main_img_cont_wifi, 20, 20);
+    lv_obj_add_flag(ui->screen_main_img_cont_wifi, LV_OBJ_FLAG_CLICKABLE);
+    lv_image_set_src(ui->screen_main_img_cont_wifi, &_wifi_RGB565A8_20x20);
+    lv_image_set_pivot(ui->screen_main_img_cont_wifi, 50,50);
+    lv_image_set_rotation(ui->screen_main_img_cont_wifi, 0);
+
+    //Write style for screen_main_img_cont_wifi, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_image_recolor_opa(ui->screen_main_img_cont_wifi, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_image_opa(ui->screen_main_img_cont_wifi, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_main_label_hum
+    ui->screen_main_label_hum = lv_label_create(ui->screen_main_cont_weather);
+    lv_obj_set_pos(ui->screen_main_label_hum, 142, 59);
+    lv_obj_set_size(ui->screen_main_label_hum, 60, 18);
+    lv_label_set_text(ui->screen_main_label_hum, "40%");
+    lv_label_set_long_mode(ui->screen_main_label_hum, LV_LABEL_LONG_WRAP);
+
+    //Write style for screen_main_label_hum, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_border_width(ui->screen_main_label_hum, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(ui->screen_main_label_hum, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui->screen_main_label_hum, lv_color_hex(0xffffff), LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui->screen_main_label_hum, &lv_font_montserratMedium_16, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui->screen_main_label_hum, 192, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_letter_space(ui->screen_main_label_hum, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_line_space(ui->screen_main_label_hum, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(ui->screen_main_label_hum, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui->screen_main_label_hum, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_top(ui->screen_main_label_hum, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_right(ui->screen_main_label_hum, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_bottom(ui->screen_main_label_hum, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_left(ui->screen_main_label_hum, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_width(ui->screen_main_label_hum, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
     //The custom code of screen_main.
 

@@ -9,3 +9,5 @@ Control y adquisición de datos con ESP32 mediante una instancia local de Home A
 -Capa de comunicación: Wi-Fi + HTTP
 -Implementación de la interfaz de usuario (UI): LVGL
 -Actualizaciones de LVGL: Grupos de eventos de FreeRTOS
+
+-当前版本为 GUI GUIDER main界面引入图片更改前

@@ -68,7 +68,9 @@ static esp_err_t config_get_handler(httpd_req_t *req) {
     httpd_resp_send(req, resp_str, strlen(resp_str));
     return ESP_OK;
 }
-// 接收 POST 请求并尝试连接WiFi
+
+
+// Receive POST requests and attempt to connect to WiFi
 static esp_err_t config_post_handler(httpd_req_t *req) {
     char buf[512];
     char ssid[32] = {0};
@@ -82,14 +84,14 @@ static esp_err_t config_post_handler(httpd_req_t *req) {
         httpd_query_key_value(buf, "ha_token", ha_token, sizeof(ha_token)) == ESP_OK) {
         if(strlen(ha_token) > 0) {
             strncpy(g_ha_ws_client_config.ha_token, ha_token, sizeof(g_ha_ws_client_config.ha_token) - 1);
-            g_ha_ws_client_config.ha_token[sizeof(g_ha_ws_client_config.ha_token) - 1] = '\0'; // 防止溢出
+            g_ha_ws_client_config.ha_token[sizeof(g_ha_ws_client_config.ha_token) - 1] = '\0'; 
             ha_date_item_save(g_ha_ws_client_config.ha_token);
         }
         if(strlen(ha_ip) > 0) {
             strncpy(g_ha_ws_client_config.ha_ip, ha_ip, sizeof(g_ha_ws_client_config.ha_ip) - 1);
-            g_ha_ws_client_config.ha_ip[sizeof(g_ha_ws_client_config.ha_ip) - 1] = '\0'; // 防止溢出
+            g_ha_ws_client_config.ha_ip[sizeof(g_ha_ws_client_config.ha_ip) - 1] = '\0'; 
             ha_date_item_save(g_ha_ws_client_config.ha_ip);
-            esp_event_post(HA_ACTION_EVENTS, HA_TOKEN_IP_UPDATE, NULL, 0, portMAX_DELAY);
+            esp_event_post(HA_ACTION_EVENTS, HA_WS_TOKEN_IP_UPDATE, NULL, 0, portMAX_DELAY);
         }
     } else {
         httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "HA IP or Token missing");
@@ -100,12 +102,9 @@ static esp_err_t config_post_handler(httpd_req_t *req) {
         
         ESP_LOGI(TAG, "解析成功: SSID=%s, Pass=%s", ssid, pass);
 
-        // 3. 配置并连接
         wifi_config_t wifi_config_http = {0};
         strlcpy((char*)wifi_config_http.sta.ssid, ssid, sizeof(wifi_config_http.sta.ssid));
         strlcpy((char*)wifi_config_http.sta.password, pass, sizeof(wifi_config_http.sta.password));
-        
-        // 建议在设置前关闭一次连接，确保配置能生效
         esp_wifi_disconnect(); 
         esp_wifi_set_config(WIFI_IF_STA, &wifi_config_http);
         esp_wifi_connect();
@@ -122,16 +121,15 @@ void webserver_begin() {
     wifi_mode_t mode;
     esp_wifi_get_mode(&mode);
     if(mode == WIFI_MODE_APSTA) {
-        ESP_LOGI(TAG, "WebServer already running in APSTA mode, stopping it");
         if (server) {
-        httpd_stop(server);
-        server = NULL;
-    }
+            httpd_stop(server);
+            server = NULL;
+        }
         return;
     }
     esp_wifi_set_mode(WIFI_MODE_APSTA);
     esp_wifi_set_config(WIFI_IF_AP, &ap_cfg);
-        httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+    httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     if (httpd_start(&server, &config) == ESP_OK) {
         httpd_uri_t get_uri = { .uri = "/", .method = HTTP_GET, .handler = config_get_handler };
         httpd_register_uri_handler(server, &get_uri);
@@ -144,9 +142,7 @@ void webserver_begin() {
 static void wifi_retry_backoff_task(void *param)
 {
     uint32_t delay_ms;
-    // 计算指数退避时间：delay = base * (2^retry_num)
     delay_ms = 1000 * (1 << s_retry_num);
-    // 限制最大等待时长
     if (delay_ms > 1000)
     {
         delay_ms = 10000;

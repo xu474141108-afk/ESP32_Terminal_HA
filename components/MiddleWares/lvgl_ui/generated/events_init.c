@@ -16,26 +16,22 @@
 #endif
 
 #include "custom.h"
-#include "esp_event.h"
 #include "app_wifi.h"
 #include "ha_ws_client.h"
 #include "esp_log.h"
-#include "storage_manager.h"
-
 
 static void screen_main_event_handler (lv_event_t *e)
 {
     lv_event_code_t code = lv_event_get_code(e);
-    lv_ui * ui = (lv_ui *)lv_event_get_user_data(e);
     switch (code) {
     case LV_EVENT_SCREEN_LOADED:
     {
-
+        lv_ui * ui = (lv_ui *)lv_event_get_user_data(e);
         lv_label_set_text(ui->screen_main_lab_cont_rt, g_main_ui_device_data[0].friendly_name);
         lv_label_set_text(ui->screen_main_lab_cont_rm, g_main_ui_device_data[1].friendly_name);
         lv_label_set_text(ui->screen_main_lab_cont_rd, g_main_ui_device_data[2].friendly_name);
         lv_label_set_text(ui->screen_main_lab_cont_md, g_main_ui_device_data[3].friendly_name);
-        lv_label_set_text(guider_ui.screen_main_label_weather, g_main_ui_device_data[4].state);
+        lv_label_set_text(guider_ui.screen_main_label_date, g_main_ui_device_data[4].state);
         break;
     }
     default:
@@ -50,7 +46,7 @@ static void screen_main_cont_md_event_handler (lv_event_t *e)
     case LV_EVENT_CLICKED:
     {
         ESP_LOGI("EVENTS","MD ID: %s Name: %s",g_main_ui_device_data[3].entity_id,g_main_ui_device_data[3].friendly_name);
-        esp_event_post(HA_ACTION_EVENTS, LVGL_WS_BUTTON_MD_TOGGLE, NULL, 0, portMAX_DELAY);
+        esp_event_post(HA_ACTION_EVENTS, HA_WS_LVGL_BUTTON_MD_TOGGLE, NULL, 0, portMAX_DELAY);
         break;
     }
     default:
@@ -65,7 +61,7 @@ static void screen_main_cont_rd_event_handler (lv_event_t *e)
     case LV_EVENT_CLICKED:
     {
         ESP_LOGI("EVENTS","RD ID: %s Name: %s",g_main_ui_device_data[2].entity_id,g_main_ui_device_data[2].friendly_name);
-        esp_event_post(HA_ACTION_EVENTS, LVGL_WS_BUTTON_RD_TOGGLE, NULL, 0, portMAX_DELAY);
+        esp_event_post(HA_ACTION_EVENTS, HA_WS_LVGL_BUTTON_RD_TOGGLE, NULL, 0, portMAX_DELAY);
         break;
     }
     default:
@@ -80,7 +76,7 @@ static void screen_main_cont_rm_event_handler (lv_event_t *e)
     case LV_EVENT_CLICKED:
     {
         ESP_LOGI("EVENTS","RM ID: %s Name: %s",g_main_ui_device_data[1].entity_id,g_main_ui_device_data[1].friendly_name);
-        esp_event_post(HA_ACTION_EVENTS, LVGL_WS_BUTTON_RM_TOGGLE, NULL, 0, portMAX_DELAY);
+        esp_event_post(HA_ACTION_EVENTS, HA_WS_LVGL_BUTTON_RM_TOGGLE, NULL, 0, portMAX_DELAY);
         break;
     }
     default:
@@ -95,7 +91,7 @@ static void screen_main_cont_rt_event_handler (lv_event_t *e)
     case LV_EVENT_CLICKED:
     {
         ESP_LOGI("EVENTS","RT ID: %s Name: %s",g_main_ui_device_data[0].entity_id,g_main_ui_device_data[0].friendly_name);
-        esp_event_post(HA_ACTION_EVENTS, LVGL_WS_BUTTON_RT_TOGGLE, NULL, 0, portMAX_DELAY);
+        esp_event_post(HA_ACTION_EVENTS, HA_WS_LVGL_BUTTON_RT_TOGGLE, NULL, 0, portMAX_DELAY);
         break;
     }
     default:
@@ -244,7 +240,6 @@ void events_init_screen_wifi (lv_ui *ui)
 {
     lv_obj_add_event_cb(ui->screen_wifi_btn_wifi_ap, screen_wifi_btn_wifi_ap_event_handler, LV_EVENT_ALL, ui);
     lv_obj_add_event_cb(ui->screen_wifi_btn_wifi_back, screen_wifi_btn_wifi_back_event_handler, LV_EVENT_ALL, ui);
-
 }
 
 static void screen_HA_btn_HA_check_event_handler (lv_event_t *e)
@@ -253,7 +248,7 @@ static void screen_HA_btn_HA_check_event_handler (lv_event_t *e)
     switch (code) {
     case LV_EVENT_CLICKED:
     {
-        get_ha_states_to_psram();
+        ha_rest_get_states_to_psram();
         break;
     }
     default:

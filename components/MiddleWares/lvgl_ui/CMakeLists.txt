@@ -7,4 +7,4 @@ file(GLOB_RECURSE SOURCES
 idf_component_register(SRCS ${SOURCES}
                     INCLUDE_DIRS ${INCLUDES}
                     REQUIRES lvgl
-                    PRIV_REQUIRES app_wifi esp_lcd_touch OTA OTA_MQTT storage_manager ha_ws_client)
+                    PRIV_REQUIRES app_wifi esp_lcd_touch OTA_MQTT storage_manager ha_ws_client)

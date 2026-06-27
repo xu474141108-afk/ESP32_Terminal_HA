@@ -23,17 +23,25 @@ typedef struct
 	bool screen_main_del;
 	lv_obj_t *screen_main_cont_md;
 	lv_obj_t *screen_main_lab_cont_md;
+	lv_obj_t *screen_main_img_cont_md;
 	lv_obj_t *screen_main_cont_rd;
 	lv_obj_t *screen_main_lab_cont_rd;
+	lv_obj_t *screen_main_img_cont_rd;
 	lv_obj_t *screen_main_cont_rm;
 	lv_obj_t *screen_main_lab_cont_rm;
+	lv_obj_t *screen_main_img_cont_rm;
 	lv_obj_t *screen_main_cont_rt;
 	lv_obj_t *screen_main_lab_cont_rt;
+	lv_obj_t *screen_main_img_cont_rt;
 	lv_obj_t *screen_main_cont_setup;
 	lv_obj_t *screen_main_lab_cont_setup;
 	lv_obj_t *screen_main_img_cont_setup;
 	lv_obj_t *screen_main_cont_weather;
-	lv_obj_t *screen_main_label_weather;
+	lv_obj_t *screen_main_label_date;
+	lv_obj_t *screen_main_img_cont_weather;
+	lv_obj_t *screen_main_label_temp;
+	lv_obj_t *screen_main_img_cont_wifi;
+	lv_obj_t *screen_main_label_hum;
 	lv_obj_t *screen_setup;
 	bool screen_setup_del;
 	lv_obj_t *screen_setup_cont_setup_main;
@@ -51,12 +59,11 @@ typedef struct
 	lv_obj_t *screen_setup_btn_setup_back_label;
 	lv_obj_t *screen_wifi;
 	bool screen_wifi_del;
-	lv_obj_t *screen_wifi_qrcode_wifi_ap;
 	lv_obj_t *screen_wifi_cont_wifi_main;
-	lv_obj_t *screen_wifi_animimg_wifi;
 	lv_obj_t *screen_wifi_label_wifi_info2;
 	lv_obj_t *screen_wifi_label_wifi_info1;
 	lv_obj_t *screen_wifi_label_wifi_state;
+	lv_obj_t *screen_wifi_qrcode_wifi_ap;
 	lv_obj_t *screen_wifi_cont_wifi_top;
 	lv_obj_t *screen_wifi_btn_wifi_ap;
 	lv_obj_t *screen_wifi_btn_wifi_ap_label;
@@ -64,7 +71,6 @@ typedef struct
 	lv_obj_t *screen_wifi_btn_wifi_back;
 	lv_obj_t *screen_wifi_btn_wifi_back_label;
 	lv_obj_t *screen_HA;
-
 	bool screen_HA_del;
 	lv_obj_t *screen_HA_cont_HA_main;
 	lv_obj_t *screen_HA_list_HA_show;
@@ -74,7 +80,6 @@ typedef struct
 	lv_obj_t *screen_HA_label_HA_main;
 	lv_obj_t *screen_HA_btn_HA_back;
 	lv_obj_t *screen_HA_btn_HA_back_label;
-	lv_obj_t *screen_HA_label_HA_nota;
 	lv_obj_t *screen_HA_cont_HA_select;
 	lv_obj_t *screen_HA_cont_7;
 	lv_obj_t *screen_HA_cont_6;
@@ -85,7 +90,7 @@ typedef struct
 	lv_obj_t *screen_OTA;
 	bool screen_OTA_del;
 	lv_obj_t *screen_OTA_cont_OTA_main;
-	lv_obj_t *screen_OTA_animimg_OTA;
+	lv_obj_t *screen_OTA_img_OTA;
 	lv_obj_t *screen_OTA_label_OTA_info2;
 	lv_obj_t *screen_OTA_label_OTA_info1;
 	lv_obj_t *screen_OTA_label_OTA_state;
@@ -135,12 +140,16 @@ void setup_scr_screen_wifi(lv_ui *ui);
 void setup_scr_screen_HA(lv_ui *ui);
 void setup_scr_screen_OTA(lv_ui *ui);
 void setup_scr_screen_System(lv_ui *ui);
+LV_IMAGE_DECLARE(_switch_off_RGB565A8_40x40);
+LV_IMAGE_DECLARE(_swtich_on_RGB565A8_40x40);
 LV_IMAGE_DECLARE(_setup_RGB565A8_40x40);
+LV_IMAGE_DECLARE(_sun_RGB565A8_100x100);
+LV_IMAGE_DECLARE(_wifi_RGB565A8_20x20);
+LV_IMAGE_DECLARE(screen_OTA_img_OTAwifi);
 
+LV_FONT_DECLARE(lv_font_montserratMedium_12)
 LV_FONT_DECLARE(lv_font_montserratMedium_16)
 LV_FONT_DECLARE(lv_font_montserratMedium_18)
-LV_FONT_DECLARE(lv_font_montserratMedium_12)
-LV_FONT_DECLARE(lv_font_montserratMedium_22)
 
 
 #ifdef __cplusplus
