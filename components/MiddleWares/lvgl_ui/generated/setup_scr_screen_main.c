@@ -388,7 +388,7 @@ void setup_scr_screen_main(lv_ui *ui)
     //Write codes screen_main_label_date
     ui->screen_main_label_date = lv_label_create(ui->screen_main_cont_weather);
     lv_obj_set_pos(ui->screen_main_label_date, 10, 5);
-    lv_obj_set_size(ui->screen_main_label_date, 140, 18);
+    lv_obj_set_size(ui->screen_main_label_date, 180, 18);
     lv_label_set_text(ui->screen_main_label_date, "Fri");
     lv_label_set_long_mode(ui->screen_main_label_date, LV_LABEL_LONG_WRAP);
 

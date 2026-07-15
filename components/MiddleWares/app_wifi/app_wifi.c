@@ -85,12 +85,12 @@ static esp_err_t config_post_handler(httpd_req_t *req) {
         if(strlen(ha_token) > 0) {
             strncpy(g_ha_ws_client_config.ha_token, ha_token, sizeof(g_ha_ws_client_config.ha_token) - 1);
             g_ha_ws_client_config.ha_token[sizeof(g_ha_ws_client_config.ha_token) - 1] = '\0'; 
-            ha_date_item_save(g_ha_ws_client_config.ha_token);
+            ha_data_item_save(g_ha_ws_client_config.ha_token);
         }
         if(strlen(ha_ip) > 0) {
             strncpy(g_ha_ws_client_config.ha_ip, ha_ip, sizeof(g_ha_ws_client_config.ha_ip) - 1);
             g_ha_ws_client_config.ha_ip[sizeof(g_ha_ws_client_config.ha_ip) - 1] = '\0'; 
-            ha_date_item_save(g_ha_ws_client_config.ha_ip);
+            ha_data_item_save(g_ha_ws_client_config.ha_ip);
             esp_event_post(HA_ACTION_EVENTS, HA_WS_TOKEN_IP_UPDATE, NULL, 0, portMAX_DELAY);
         }
     } else {

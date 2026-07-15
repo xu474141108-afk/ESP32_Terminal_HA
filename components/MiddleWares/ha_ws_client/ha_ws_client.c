@@ -10,13 +10,18 @@
 #include "esp_event.h"
 #include "custom.h"
 #include "ha_ws_client.h"
+#include "esp_wifi.h"
 ESP_EVENT_DEFINE_BASE(HA_ACTION_EVENTS);
 
 
 #define TAG "HA_WS_CLIENT"
-#define MAX_WS_BUFFER_SIZE (128 * 1024) // 给 128KB，PSRAM 绰绰有余
+#define MAX_WS_BUFFER_SIZE (128 * 1024) 
 #define MAX_COUT 6
-
+//TEST
+#define SAMPLE_NUM 100
+#define PYTHON_SERVER_URL "http://192.168.1.136:8000/upload" 
+static void ws_start_delay_test_packet(void);
+//TEST
 // static void process_ha_json_payload(cJSON *root);
 static void* cjson_psram_malloc(size_t size);
 static void cjson_psram_free(void* ptr);
@@ -32,11 +37,17 @@ typedef struct {
     int valid_count;
 } ha_ws_entities_t;
 
-
+// test
+float single_delay_buf[SAMPLE_NUM];
+int rssi_buf[SAMPLE_NUM];
+uint8_t test_scene = 1;         //1=近距离无遮挡 2=隔墙远距离
+bool test_finish_flag = false;  //采集完成标志
+uint16_t sample_index = 0;
+int64_t send_ts_us;             //测试包发送时间戳
+// test
 
 static char *ws_rx_buffer = NULL;
 static int msg_id = 1; 
-static int g_subscribe_trigger_id = 0; 
 static int g_subscribe_entities_id = 0; 
 static esp_websocket_client_handle_t client;
 ha_ws_client_config_t g_ha_ws_client_config={
@@ -48,8 +59,21 @@ ha_device_t g_HAdevice_ctx;
 weather_data_t entity_weather_data = {.temp = "0", .hum = "0"};
 
 
+static void ha_ws_subscribe_all_events(int msg_id_num)
+{
+    cJSON *root = cJSON_CreateObject();
+    cJSON_AddNumberToObject(root, "id", msg_id_num);
+    cJSON_AddStringToObject(root, "type", "subscribe_events");
+    char *out = cJSON_PrintUnformatted(root);
+    if (esp_websocket_client_is_connected(client)) {
+        esp_websocket_client_send_text(client, out, strlen(out), portMAX_DELAY);
+    }
+    free(out);
+    cJSON_Delete(root);
+}
 
-void ha_ws_subscribe_entities(int msg_id, const char **entity_ids, int count) {
+
+ void ha_ws_subscribe_entities(int msg_id, const char **entity_ids, int count) {
     cJSON *root = cJSON_CreateObject();
     cJSON_AddNumberToObject(root, "id", msg_id);
     cJSON_AddStringToObject(root, "type", "subscribe_entities");
@@ -61,7 +85,6 @@ void ha_ws_subscribe_entities(int msg_id, const char **entity_ids, int count) {
     cJSON_AddItemToObject(root, "entity_ids", array);
 
     char *out = cJSON_PrintUnformatted(root);
-    // ... 调用 esp_websocket_client_send_text 发送 out ...
     free(out);
     cJSON_Delete(root);
 }
@@ -128,40 +151,8 @@ static ha_ws_entities_t ha_ws_entities_filtro(const char **entities_input)
     {
         ESP_LOGW(TAG, "no entities found");
     }
+    ESP_LOGI(TAG, "entities_ret.valid_count: %d", entities_ret.valid_count);
     return entities_ret;
-}
-
-static void ha_ws_trigger_json_send(int msg_id_num, ha_ws_entities_t entities_input)
-{
-    cJSON *root = cJSON_CreateObject();
-    cJSON_AddNumberToObject(root, "id", msg_id_num);
-    cJSON_AddStringToObject(root, "type", "subscribe_trigger");
-
-    cJSON *trigger = cJSON_CreateObject();
-    cJSON_AddStringToObject(trigger, "platform", "state");
-
-    cJSON *entity_array = cJSON_CreateArray();
-    for (int i = 0; i < entities_input.valid_count; i++)
-    {
-        cJSON_AddItemToArray(entity_array, cJSON_CreateString(entities_input.entities[i]));
-    }
-    cJSON_AddItemToObject(trigger, "entity_id", entity_array);
-    cJSON_AddItemToObject(root, "trigger", trigger);
-
-    char *out = cJSON_PrintUnformatted(root);
-    if (out)
-    {
-        int len = strlen(out);
-        if (esp_websocket_client_is_connected(client))
-        {
-            esp_websocket_client_send_text(client, out, len, portMAX_DELAY);
-            for(int i = 0; i < entities_input.valid_count; i++){
-            }
-        }
-        free(out);
-    }
-
-    cJSON_Delete(root);
 }
 
 static void ha_ws_entities_json_send(int msg_id_num, ha_ws_entities_t entities_input)
@@ -169,15 +160,16 @@ static void ha_ws_entities_json_send(int msg_id_num, ha_ws_entities_t entities_i
     cJSON *root = cJSON_CreateObject();
     cJSON_AddNumberToObject(root, "id", msg_id_num);
     cJSON_AddStringToObject(root, "type", "subscribe_entities");
-
     cJSON *entity_array = cJSON_CreateArray();
-    for (int i = 0; i < entities_input.valid_count; i++)
+    ESP_LOGE("ERROR", "entities_input count: %d", entities_input.valid_count);
+    for (int i = 0; i < entities_input.valid_count-1; i++)
     {
+        ESP_LOGE("ERROR", "ERROR SITIO 3: %s,%d", entities_input.entities[i],i);
         cJSON_AddItemToArray(entity_array, cJSON_CreateString(entities_input.entities[i]));
     }
-
+    ESP_LOGE("ERROR", "ERROR SITIO 4");
     cJSON_AddItemToObject(root, "entity_ids", entity_array);
-
+    ESP_LOGE("ERROR", "ERROR SITIO 5");
     char *out = cJSON_PrintUnformatted(root);
     if (out)
     {
@@ -194,25 +186,6 @@ static void ha_ws_entities_json_send(int msg_id_num, ha_ws_entities_t entities_i
     cJSON_Delete(root);
 }
 
-static void ha_ws_convert_trigger_subsc(const ha_entity_t *entity_input)
-{
-    const char *temp_ptr_arr[MAX_COUT+1] = {0}; 
-    int idx = 0;
-    for(int i = 0; i < MAX_COUT; i++)
-    {
-        temp_ptr_arr[idx++] = entity_input[i].entity_id;
-    }
-    temp_ptr_arr[idx] = NULL;
-    ha_ws_entities_t entity_ids = ha_ws_entities_filtro(temp_ptr_arr);
-    if (entity_ids.valid_count <= 0)
-    {
-        return;
-    }
-
-    ha_ws_trigger_json_send(msg_id, entity_ids);
-    g_subscribe_trigger_id = msg_id;
-    msg_id++;
-}
 
 static void ha_ws_convert_entities_subsc(const ha_entity_t *entity_input){
     const char *temp_ptr_arr[MAX_COUT+1] = {0}; 
@@ -246,72 +219,6 @@ static cJSON* cJSON_GetObjectItemByPath(cJSON* root, const char* path) {
     free(path_copy);
     return current;
 }
-
-// static void ha_auth_token_send2() {
-//     cJSON *auth_msg = cJSON_CreateObject();
-//     cJSON_AddStringToObject(auth_msg, "type", "auth");
-//     cJSON_AddStringToObject(auth_msg, "access_token", g_ha_ws_client_config.ha_token);
-//     ESP_LOGI(TAG, ": %s", g_ha_ws_client_config.ha_token);
-//     char *out = cJSON_PrintUnformatted(auth_msg);
-//     if (out) {
-//         int len = strlen(out);
-//         esp_err_t err = esp_websocket_client_send_text(client, out, len, portMAX_DELAY);
-//         if (err == ESP_OK) {
-//             ESP_LOGI(TAG, "发送认证报文: %s", out);
-//         } else {
-//             ESP_LOGE(TAG, "发送认证失败，错误码: %d", err);
-//         }
-//         free(out);
-//     }
-//     cJSON_Delete(auth_msg);
-// }
-
-// static void process_ha_json_payload(cJSON *root) {
-//     // 1. 解析大 JSON (确保你的任务栈或堆空间足够)
-//     cJSON *result = cJSON_GetObjectItem(root, "result");
-//     if (!cJSON_IsArray(result)) {
-//         char *raw_json = cJSON_Print(root);
-//             ESP_LOGW(TAG, "消息中不包含有效的 result 数组。原始数据如下：");
-//         if (raw_json != NULL) {
-//             ESP_LOGW(TAG, "%s", raw_json);
-//             free(raw_json); // 别忘了释放 Print 出来的内存
-//         }
-//         cJSON_Delete(root);
-//         return;
-//     }
-//     ESP_LOGI(TAG, "成功解析 JSON，开始过滤设备...");
-//     int size = cJSON_GetArraySize(result);
-//     g_device_count = 0; 
-//     for (int i = 0; i < size; i++) {
-//         cJSON *item = cJSON_GetArrayItem(result, i);      
-//         // 安全提取 entity_id
-//         cJSON *eid_obj = cJSON_GetObjectItem(item, "entity_id");
-//         if (!cJSON_IsString(eid_obj)) continue;
-//         const char *eid = eid_obj->valuestring;
-//         // 过滤逻辑
-//         if (strstr(eid, "light.") || strstr(eid, "switch.")) {
-//             if (g_device_count >= 50) {
-//                 ESP_LOGW(TAG, "目标设备过多，数组已满，跳过后续目标设备...");
-//                 break;
-//             }
-//             cJSON *attrs = cJSON_GetObjectItem(item, "attributes");
-//             const char *fname = eid;
-//             if (cJSON_IsObject(attrs)) {
-//                 cJSON *fname_obj = cJSON_GetObjectItem(attrs, "friendly_name");
-//                 // 如果没有 friendly_name，则回退显示 eid
-//                 if (cJSON_IsString(fname_obj)) fname = fname_obj->valuestring;
-//             }             
-//                // --- 核心存储逻辑 ---
-//             strncpy(g_device_list[g_device_count].entity_id, eid, 63);
-//             strncpy(g_device_list[g_device_count].friendly_name, fname, 63);
-//             g_device_count++;        
-//             ESP_LOGI(TAG, "已存入数组: %s", fname);
-//             }
-//         }
-//     // 2. 彻底释放 cJSON 树占用的堆内存
-//     cJSON_Delete(root); 
-//     ESP_LOGI(TAG, "解析完成，内存已回收。剩余堆内存: %ld", esp_get_free_heap_size());
-// }
 
 static void ha_auth_token_send(void)
 {
@@ -468,15 +375,21 @@ static void ha_ws_message_handle(cJSON *root){
     else if (strcmp(type, "auth_ok") == 0) {
         ESP_LOGI(TAG, "Autorised, subscribe entities states");     
         ha_ws_convert_entities_subsc(g_main_ui_device_data);
+        ha_ws_subscribe_all_events(msg_id++);
     }
     else if (strcmp(type, "auth_invalid") == 0) {
         ESP_LOGE(TAG, "Autorisation failed, will be closed");
     }
     else if (strcmp(type, "result") == 0) {
         cJSON *id_item = cJSON_GetObjectItem(root, "id");
+        // char *result_dump = cJSON_PrintUnformatted(root);
+        // ESP_LOGW(TAG, "result: %s", result_dump); // 改成D日志减少刷屏
+        // free(result_dump);
+
         if (cJSON_IsNumber(id_item) && id_item->valueint == msg_id - 1) {
-            ESP_LOGI(TAG, "Recieved result, ID: %d", msg_id - 1);
+            ESP_LOGD(TAG, "Recieved result, ID: %d", msg_id - 1);
         }
+
         else{
             int other_id = cJSON_IsNumber(id_item) ? id_item->valueint : -1;
             ESP_LOGW(TAG, "Revieved other result, ID: %d", other_id);
@@ -556,10 +469,13 @@ static void ha_ws_logic_handler(void* handler_args, esp_event_base_t base, int32
     break;}
     case HA_WS_LVGL_REQ_ALL_DATA:{
     break;}
+    case HA_WS_TEST:{
+        ws_start_delay_test_packet();
+    }
     }
 }
 
-// 回调函数
+// callback function for websocket events
 static void ha_ws_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data) {
     esp_websocket_event_data_t *data = (esp_websocket_event_data_t *)event_data;
     switch (event_id) {
@@ -576,6 +492,27 @@ static void ha_ws_event_handler(void *handler_args, esp_event_base_t base, int32
             }
             //  Check  if the message is complete
             if (data->op_code == 0x01 && data->payload_offset + data->data_len == data->payload_len && data->payload_len > 0) {
+                if(strstr(ws_rx_buffer, "\"event_type\":\"delay_test\"") && !test_finish_flag)
+                {
+                    int64_t recv_ts = esp_timer_get_time();
+                    float rtt_ms = (recv_ts - send_ts_us) / 1000.0f;
+                    ESP_LOGI(TAG, "匹配到测试包，发包ts:%lld，收包ts:%lld，单程延迟：%.2fms", send_ts_us, recv_ts, rtt_ms/2);
+                    float single_delay = rtt_ms / 2.0f;
+
+                    int rssi_val = 0;
+                    esp_wifi_sta_get_rssi(&rssi_val);
+
+                    single_delay_buf[sample_index] = single_delay;
+                    rssi_buf[sample_index] = rssi_val;
+                    sample_index++;
+                    if(sample_index >= SAMPLE_NUM)
+                    {
+                        test_finish_flag = true;
+                        ESP_LOGI(TAG, "已采集满100组时延样本，等待后台上传Python");
+                    }
+                }
+
+
                 ws_event_data_t event_payload = {
                     .data = ws_rx_buffer,
                     .len = data->payload_len
@@ -768,11 +705,9 @@ void ha_rest_get_states_to_psram() {
 }
 
 
-
 static void websocket_reconnect_timer_cb(void* arg) {
     esp_websocket_client_handle_t client = (esp_websocket_client_handle_t)arg;
     ESP_LOGI("RECONNECT", "正在从外部任务执行强制重启...");
-    //esp_websocket_client_stop(client);
     vTaskDelay(pdMS_TO_TICKS(1000));
     esp_websocket_client_start(client);
 }
@@ -789,10 +724,114 @@ static void trigger_reconnect_timer(esp_websocket_client_handle_t ws_client) {
         esp_timer_create(&timer_args, &reconnect_timer);
     }
 
-    // 停止之前的定时器（防止重复触发）
     esp_timer_stop(reconnect_timer);
     
     // 1000000 微秒 = 1 秒后，在后台自动执行回调
     esp_timer_start_once(reconnect_timer, 1000000); 
     ESP_LOGI("RECONNECT", "定时器已启动，1秒后将重启 WebSocket");
+}
+
+
+// test funcion
+static esp_err_t send_delay_data_to_python(void)
+{
+    cJSON_Hooks hooks = {
+        .malloc_fn = cjson_psram_malloc,
+        .free_fn = cjson_psram_free
+    };
+    cJSON_InitHooks(&hooks);
+
+    cJSON *root = cJSON_CreateObject();
+    cJSON *delay_array = cJSON_CreateArray();
+    cJSON *rssi_array = cJSON_CreateArray();
+
+    int rssi_sum = 0;
+    for(int i = 0; i < SAMPLE_NUM; i++)
+    {
+        cJSON_AddItemToArray(delay_array, cJSON_CreateNumber(single_delay_buf[i]));
+        cJSON_AddItemToArray(rssi_array, cJSON_CreateNumber(rssi_buf[i]));
+        rssi_sum += rssi_buf[i];
+    }
+    float avg_rssi = (float)rssi_sum / SAMPLE_NUM;
+
+    cJSON_AddItemToObject(root, "single_delay_ms", delay_array);
+    cJSON_AddItemToObject(root, "rssi_dbm", rssi_array);
+    // 上传本组平均WiFi信号强度替代手动scene标记
+    cJSON_AddNumberToObject(root, "avg_rssi_dbm", avg_rssi);
+
+    char *json_text = cJSON_PrintUnformatted(root);
+    if(json_text == NULL)
+    {
+        cJSON_Delete(root);
+        return ESP_ERR_NO_MEM;
+    }
+
+    //HTTP POST 上传
+    esp_http_client_config_t http_cfg = {
+        .url = PYTHON_SERVER_URL,
+        .method = HTTP_METHOD_POST,
+        .timeout_ms = 5000, 
+    };
+    esp_http_client_handle_t http_client = esp_http_client_init(&http_cfg);
+    esp_http_client_set_header(http_client, "Content-Type", "application/json");
+    esp_http_client_set_post_field(http_client, json_text, strlen(json_text));
+    esp_err_t ret = esp_http_client_perform(http_client);
+
+    if(ret == ESP_OK)
+    {
+        ESP_LOGI(TAG, "时延数据上传Python成功,本组平均RSSI: %.2f dBm", avg_rssi);
+    }
+    else
+    {
+        ESP_LOGE(TAG, "时延数据上传失败, err:%s", esp_err_to_name(ret));
+    }
+
+    //释放资源
+    esp_http_client_cleanup(http_client);
+    free(json_text);
+    cJSON_Delete(root);
+
+    //重置缓存，下一轮采集
+    sample_index = 0;
+    test_finish_flag = false;
+    return ret;
+}
+
+
+static void ws_ha_test_envia(void *arg){
+    
+    while(1)
+    {
+        if(test_finish_flag)
+        {
+            send_delay_data_to_python();
+        }
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+}
+
+void ws_ha_test_init(void)
+{
+    xTaskCreate(ws_ha_test_envia, "ws_ha_test_envia", 16384, NULL, 5, NULL);
+}
+
+static void ws_start_delay_test_packet(void)
+{
+    if(test_finish_flag)
+    {
+        ESP_LOGW(TAG, "上一轮数据未上传完成，禁止发包");
+        return;
+    }
+    if(!esp_websocket_client_is_connected(client))
+    {
+        ESP_LOGE(TAG, "HA WS未连接,无法发送测试包");
+        return;
+    }
+
+    send_ts_us = esp_timer_get_time();
+    char payload[192];
+    snprintf(payload, sizeof(payload),
+        "{\"id\":%d,\"type\":\"fire_event\",\"event_type\":\"delay_test\",\"event_data\":{\"ts\":%lld}}",
+        msg_id++, send_ts_us);
+    esp_websocket_client_send_text(client, payload, strlen(payload), portMAX_DELAY);
 }

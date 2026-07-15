@@ -13,8 +13,8 @@ extern "C" {
 esp_err_t storage_init(void);
 
 
-esp_err_t ha_date_item_save(const char *p_buf);
-esp_err_t ha_date_item_load(char *p_buf);
+esp_err_t ha_data_item_save(const char *p_buf);
+esp_err_t ha_data_item_load(char *p_buf);
 extern QueueHandle_t nvs_save_queue;
 
 void all_nvs_erase(void);

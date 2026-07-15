@@ -31,7 +31,7 @@ esp_err_t storage_init(void) {
         err = nvs_flash_init();
     }
 
-    BaseType_t res = xTaskCreate(nvs_task, "nvs_worker", 4096,  NULL, 2, NULL);
+    BaseType_t res = xTaskCreatePinnedToCore(nvs_task, "nvs_worker", 4096,  NULL, 2, NULL,1);
     if (res != pdPASS) {
         ESP_LOGE("NVS_TASK", "Creat failed");
     }
@@ -120,7 +120,7 @@ static const char* ha_nvs_key_get(const char *p_buf)
     return NULL;
 }
 
-esp_err_t ha_date_item_save(const char *p_buf)
+esp_err_t ha_data_item_save(const char *p_buf)
 {
     if (p_buf == NULL)
     {
@@ -153,7 +153,7 @@ esp_err_t ha_date_item_save(const char *p_buf)
     return err;
 }
 
-esp_err_t ha_date_item_load(char *p_buf)
+esp_err_t ha_data_item_load(char *p_buf)
 {
     if (p_buf == NULL)
     {
@@ -194,8 +194,8 @@ esp_err_t ha_date_item_load(char *p_buf)
 
 void all_date_load_init()
 {
-    ha_date_item_load(g_ha_ws_client_config.ha_ip);
-    ha_date_item_load(g_ha_ws_client_config.ha_token); 
+    ha_data_item_load(g_ha_ws_client_config.ha_ip);
+    ha_data_item_load(g_ha_ws_client_config.ha_token); 
     for(int i=0;i<6;i++)
     {
         main_ui_item_load(&g_main_ui_device_data[i],i);

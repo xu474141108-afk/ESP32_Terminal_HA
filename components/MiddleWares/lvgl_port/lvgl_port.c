@@ -86,7 +86,7 @@ static void lvgl_touch_cb(lv_indev_t *indev, lv_indev_data_t *data)
         data->point.x = touchpad_x[0];
         data->point.y = touchpad_y[0];
         data->state = LV_INDEV_STATE_PRESSED;
-        // ESP_LOGW("TOUCH_DATA", "X: %u, Y: %u", data->point.x, data->point.y);
+        ESP_LOGW("TOUCH_DATA", "X: %u, Y: %u", data->point.x, data->point.y);
     } else {
         data->state = LV_INDEV_STATE_RELEASED;
     }
@@ -141,7 +141,7 @@ void lvgl_port_init(lvgl_panel_t *panel)
     lv_indev_set_read_cb(indev, lvgl_touch_cb);
 
     ESP_LOGI(TAG, "Create LVGL task");
-    xTaskCreatePinnedToCore(lvgl_port_task, "LVGL", 16384, NULL, 5, NULL, 0);
+    xTaskCreatePinnedToCore(lvgl_port_task, "LVGL", 16384, NULL, 6, NULL, 1);
     all_timer_creat_init();
 }
 

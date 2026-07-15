@@ -15,6 +15,7 @@ enum {
     HA_WS_LVGL_BUTTON_RD_TOGGLE,
     HA_WS_LVGL_BUTTON_MD_TOGGLE,
     HA_WS_LVGL_REQ_ALL_DATA,
+    HA_WS_TEST,
 };
 
 
@@ -68,7 +69,7 @@ extern weather_data_t entity_weather_data;
 
 void ha_rest_get_states_to_psram(void);
 void websocket_app_start();
-
+void ws_ha_test_init(void);
 
 #ifdef __cplusplus
 }

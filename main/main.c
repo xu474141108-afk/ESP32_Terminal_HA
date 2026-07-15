@@ -11,16 +11,15 @@ void app_main(void)
     storage_init();
     // all_nvs_erase();
     all_date_load_init();
-    
-
     bsp_display_init();
     vTaskDelay(pdMS_TO_TICKS(1000));
     wifi_init();
     vTaskDelay(pdMS_TO_TICKS(4000));
     //ota_mqtt_init();
     websocket_app_start();
-    
+    //ws_ha_test_init();
     while (1) {
-        vTaskDelay(pdMS_TO_TICKS(8000));
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        esp_event_post(HA_ACTION_EVENTS, HA_WS_TEST, NULL, 0, portMAX_DELAY);
     }
 }
