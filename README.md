@@ -44,4 +44,6 @@ Two upgrade options are provided: local HTTP firmware update and remote version 
 ### 7. Ultra-Low-Latency State Synchronization
 
 Local touch events uploaded to Home Assistant and device state updates pushed down from Home Assistant are synchronized in real time over WebSocket. The minimum end-to-end latency reaches 60 ms.
+
+### 8. Layer Architecture
 <img width="576" height="804" alt="image" src="https://github.com/user-attachments/assets/47618133-ad23-43ec-aaaf-c8c5bf01d019" />
