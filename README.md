@@ -1,4 +1,4 @@
-## 选择语言 / Choose Language
+## Choose Language/选择语言
 - [English Document](./README.md)
 - [简体中文文档](./README.zh-CN.md)
 # Project Introduction
