@@ -66,11 +66,14 @@ extern ha_device_t g_HAdevice_ctx;
 extern ha_entity_t g_main_ui_device_data[6];
 extern ha_ws_client_config_t g_ha_ws_client_config;
 extern weather_data_t entity_weather_data;
+extern SemaphoreHandle_t ui_data_mutex;
+extern QueueHandle_t temp_queue;
+extern QueueHandle_t hum_queue;
+extern QueueHandle_t date_queue;
 
 void ha_rest_get_states_to_psram(void);
 void websocket_app_start();
-void ws_ha_test_init(void);
-
+ 
 #ifdef __cplusplus
 }
 #endif

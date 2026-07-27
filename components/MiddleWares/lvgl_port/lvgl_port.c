@@ -20,6 +20,7 @@
 #define LVGL_TASK_MIN_DELAY_MS 1
 #define LVGL_TASK_MAX_DELAY_MS 10
 #define LCD_BUF_HEIGHT_DIVIDER 2
+#define LVGL_TASK_SIZE 1024*16
 #define TAG "lvgl_port"
 
 
@@ -81,7 +82,7 @@ static void lvgl_touch_cb(lv_indev_t *indev, lv_indev_data_t *data)
     /* Get coordinates */
     bool touchpad_pressed = esp_lcd_touch_get_coordinates(touch_pad, touchpad_x, touchpad_y, NULL, &touchpad_cnt, 1);
     // esp_lcd_touch_clear_data(touch_pad);
-    //ESP_LOGI("TOUCH_DEBUG", "Pressed: %d, Count: %u", (int)touchpad_pressed, touchpad_cnt);
+    
     if (touchpad_pressed && touchpad_cnt > 0) {
         data->point.x = touchpad_x[0];
         data->point.y = touchpad_y[0];
@@ -141,7 +142,7 @@ void lvgl_port_init(lvgl_panel_t *panel)
     lv_indev_set_read_cb(indev, lvgl_touch_cb);
 
     ESP_LOGI(TAG, "Create LVGL task");
-    xTaskCreatePinnedToCore(lvgl_port_task, "LVGL", 16384, NULL, 6, NULL, 1);
+    xTaskCreatePinnedToCore(lvgl_port_task, "LVGL", LVGL_TASK_SIZE, NULL, 7, NULL, 1);
     all_timer_creat_init();
 }
 

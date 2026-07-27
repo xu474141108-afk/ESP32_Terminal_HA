@@ -18,9 +18,6 @@
 #include "bsp_ili9488.h"
 #endif
 
-#define TEST_LCD_H_RES  240   
-#define TEST_LCD_V_RES  320   
-
 
 #define LCD_SPI_MODE 0
 #define LCD_SPI_CLK_FREQ_HZ 40 * 1000 * 1000 // 60MHz
@@ -42,14 +39,14 @@
 #define LCD_DC_GPIO_NUM 42
 #define LCD_CS_GPIO_NUM 1
 #define LCD_RST_GPIO_NUM 2
-#define LCD_BL_GPIO_NUM 10
+#define LCD_BL_GPIO_NUM 39
 
 #define LCD_CLK_GPIO_NUM 40
 #define LCD_MOSI_GPIO_NUM 41
-#define LCD_MISO_GPIO_NUM 45
+#define LCD_MISO_GPIO_NUM 38
 
-#define TOUCH_IRQ_GPIO_NUM 47
-#define TOUCH_CS_GPIO_NUM 12
+#define TOUCH_IRQ_GPIO_NUM 21
+#define TOUCH_CS_GPIO_NUM 47
 
 esp_lcd_panel_handle_t panel_handle = NULL;
 esp_lcd_panel_io_handle_t io_handle = NULL;
@@ -58,40 +55,7 @@ lvgl_panel_t panel = {0};
 
 static const char *TAG = "bsp_display";
 
-void bsp_display_bk_init(void)
-{
-    ledc_timer_config_t ledc_timer = {
-        .speed_mode       = LEDC_LOW_SPEED_MODE,
-        .duty_resolution  = LEDC_TIMER_13_BIT,
-        .timer_num        = LEDC_TIMER_0,
-        .freq_hz          = 5000,
-        .clk_cfg          = LEDC_AUTO_CLK
-    };
-    ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer));
 
-    ledc_channel_config_t ledc_channel = {
-        .speed_mode     = LEDC_LOW_SPEED_MODE,
-        .channel        = LEDC_CHANNEL_0,
-        .timer_sel      = LEDC_TIMER_0,
-        .intr_type      = LEDC_INTR_DISABLE,
-        .gpio_num       = LCD_BL_GPIO_NUM,
-        .duty           = 0, // 初始亮度为 0
-        .hpoint         = 0
-    };
-    ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel));
-
-}
-
-void bsp_display_brightness(int brightness)
-{
-    if (brightness < 0) brightness = 0;
-    if (brightness > 100) brightness = 100;
-    uint32_t duty = brightness * 82; // 将亮度值映射到 0-8191 的范围
-    uint32_t default_duty = (LCD_BK_LIGHT_ON_LEVEL == 1) ? duty : (8191 - duty);
-    
-    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, default_duty);
-    ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
-}
 
 static void bsp_display_LCD_init(void)
 {

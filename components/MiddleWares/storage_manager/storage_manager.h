@@ -18,7 +18,7 @@ esp_err_t ha_data_item_load(char *p_buf);
 extern QueueHandle_t nvs_save_queue;
 
 void all_nvs_erase(void);
-void all_date_load_init();
+void all_data_load_init();
 void test_main_ui_item_save();
 #ifdef __cplusplus
 }

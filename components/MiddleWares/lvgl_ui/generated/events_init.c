@@ -106,7 +106,11 @@ static void screen_main_cont_setup_event_handler (lv_event_t *e)
     case LV_EVENT_CLICKED:
     {
         ui_load_scr_animation(&guider_ui, &guider_ui.screen_setup, guider_ui.screen_setup_del, &guider_ui.screen_main_del, setup_scr_screen_setup, LV_SCR_LOAD_ANIM_MOVE_TOP, 200, 200, true, true);
-        lv_timer_pause(main_timer);
+        if(main_timer != NULL){
+            lv_timer_pause(main_timer);
+        }
+        is_first_load=true;
+        // lv_timer_pause(main_weather_timer);
         break;
     }
     default:
@@ -176,6 +180,7 @@ static void screen_setup_cont_wifi_event_handler (lv_event_t *e)
     {
         ui_load_scr_animation(&guider_ui, &guider_ui.screen_wifi, guider_ui.screen_wifi_del, &guider_ui.screen_setup_del, setup_scr_screen_wifi, LV_SCR_LOAD_ANIM_MOVE_TOP, 200, 200, true, true);
         lv_timer_resume(wifi_timer);
+        is_first_load_wifi = true;
         break;
     }
     default:
@@ -190,7 +195,11 @@ static void screen_setup_btn_setup_back_event_handler (lv_event_t *e)
     case LV_EVENT_CLICKED:
     {
         ui_load_scr_animation(&guider_ui, &guider_ui.screen_main, guider_ui.screen_main_del, &guider_ui.screen_setup_del, setup_scr_screen_main, LV_SCR_LOAD_ANIM_MOVE_BOTTOM, 200, 200, true, true);
-        lv_timer_resume(main_timer);
+        if(main_timer != NULL){
+            lv_timer_resume(main_timer);
+        }
+
+        // lv_timer_resume(main_weather_timer);
         break;
     }
     default:

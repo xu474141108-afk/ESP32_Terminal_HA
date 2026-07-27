@@ -35,7 +35,6 @@ esp_err_t storage_init(void) {
     if (res != pdPASS) {
         ESP_LOGE("NVS_TASK", "Creat failed");
     }
-    ESP_LOGE("NVS_TASK", "Created");
     return err;
 }
 
@@ -60,7 +59,6 @@ static const char* cont_nvs_key_get2(uint8_t key_index)
     }
 }
 
-
 static esp_err_t main_ui_item_save(ha_entity_t *p_slot, uint8_t key_index) 
 {
     if (p_slot == NULL) return ESP_ERR_INVALID_ARG;
@@ -74,7 +72,6 @@ static esp_err_t main_ui_item_save(ha_entity_t *p_slot, uint8_t key_index)
     esp_err_t err = nvs_open(NVS_STORAGE_NAMESPACE, NVS_READWRITE, &my_handle);
     if (err != ESP_OK) return err;
 
-    // 2. 写入数据
     err = nvs_set_blob(my_handle, nvs_key, p_slot, sizeof(ha_entity_t));
     if (err == ESP_OK) {
         err = nvs_commit(my_handle);
@@ -99,9 +96,12 @@ static esp_err_t main_ui_item_load(ha_entity_t *p_slot, uint8_t key_index)
     size_t required_size = 0;
     err = nvs_get_blob(my_handle, nvs_key, NULL, &required_size);
     
+    
     if (err == ESP_OK && required_size == sizeof(ha_entity_t)) {
         err = nvs_get_blob(my_handle, nvs_key, p_slot, &required_size);
-        ESP_LOGI(TAG, "Load FROM NVS:  %s ", nvs_key);
+        if(err == ESP_OK){
+            ESP_LOGE(TAG, "Load entity OK, key: %s, entity_id: %s, name: %s",nvs_key, p_slot->entity_id, p_slot->friendly_name);
+        }
     } else if (err == ESP_ERR_NVS_NOT_FOUND) {
         ESP_LOGW(TAG, "No find key: %s en NVS", nvs_key);
     } else {
@@ -111,6 +111,9 @@ static esp_err_t main_ui_item_load(ha_entity_t *p_slot, uint8_t key_index)
     nvs_close(my_handle);
     return err;
 }
+
+
+
 
 //HA_TOKEN, HA_IP Save and load
 static const char* ha_nvs_key_get(const char *p_buf)
@@ -127,7 +130,7 @@ esp_err_t ha_data_item_save(const char *p_buf)
         ESP_LOGE(TAG, "Input invalid");
         return ESP_ERR_INVALID_ARG;
     }
-
+    ESP_LOGI(TAG, "Ready to save string to NVS, content: [%s]", p_buf);
     const char *nvs_key = ha_nvs_key_get(p_buf);
     if (nvs_key == NULL)
     {
@@ -187,19 +190,20 @@ esp_err_t ha_data_item_load(char *p_buf)
     }
     err = nvs_get_str(my_handle, nvs_key, p_buf,  &str_len);
 
-    ESP_LOGI(TAG, "Load from NVS, key: %s, val: %s", nvs_key, p_buf);
+    ESP_LOGE(TAG, "Load HA DATA OK, key: %s, val: %s", nvs_key, p_buf);
     nvs_close(my_handle);
     return err;
 }
 
-void all_date_load_init()
+
+//All data Save and load
+void all_data_load_init()
 {
     ha_data_item_load(g_ha_ws_client_config.ha_ip);
     ha_data_item_load(g_ha_ws_client_config.ha_token); 
     for(int i=0;i<6;i++)
     {
         main_ui_item_load(&g_main_ui_device_data[i],i);
-        ESP_LOGE(TAG, "Load from NVS, ID: %s, NAME: %s", g_main_ui_device_data[i].entity_id, g_main_ui_device_data[i].friendly_name);
     }
 }
 
@@ -207,8 +211,6 @@ void all_nvs_erase(void)
 {   
     esp_err_t ret;
     nvs_close(0);
-
-    // 3. 全盘擦除NVS分区
     ret = nvs_flash_erase();
     if(ret != ESP_OK)
     {
@@ -216,8 +218,6 @@ void all_nvs_erase(void)
         return;
     }
     ESP_LOGI(TAG,"NVS分区全部擦除完成");
-
-    // 4. 关键：擦完强制重新初始化NVS
     ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
     {

@@ -13,7 +13,7 @@
 #include "events_init.h"
 #include "widgets_init.h"
 #include "custom.h"
-
+#include "ha_ws_client.h"
 
 
 void setup_scr_screen_main(lv_ui *ui)
@@ -389,7 +389,7 @@ void setup_scr_screen_main(lv_ui *ui)
     ui->screen_main_label_date = lv_label_create(ui->screen_main_cont_weather);
     lv_obj_set_pos(ui->screen_main_label_date, 10, 5);
     lv_obj_set_size(ui->screen_main_label_date, 180, 18);
-    lv_label_set_text(ui->screen_main_label_date, "Fri");
+    lv_label_set_text(ui->screen_main_label_date, " ");
     lv_label_set_long_mode(ui->screen_main_label_date, LV_LABEL_LONG_WRAP);
 
     //Write style for screen_main_label_date, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
@@ -413,7 +413,7 @@ void setup_scr_screen_main(lv_ui *ui)
     lv_obj_set_pos(ui->screen_main_img_cont_weather, 8, 28);
     lv_obj_set_size(ui->screen_main_img_cont_weather, 100, 100);
     lv_obj_add_flag(ui->screen_main_img_cont_weather, LV_OBJ_FLAG_CLICKABLE);
-    lv_image_set_src(ui->screen_main_img_cont_weather, &_sun_RGB565A8_100x100);
+    // lv_image_set_src(ui->screen_main_img_cont_weather, &_sunny_RGB565A8_100x100);
     lv_image_set_pivot(ui->screen_main_img_cont_weather, 50,50);
     lv_image_set_rotation(ui->screen_main_img_cont_weather, 0);
 
@@ -423,9 +423,9 @@ void setup_scr_screen_main(lv_ui *ui)
 
     //Write codes screen_main_label_temp
     ui->screen_main_label_temp = lv_label_create(ui->screen_main_cont_weather);
-    lv_obj_set_pos(ui->screen_main_label_temp, 114, 37);
-    lv_obj_set_size(ui->screen_main_label_temp, 60, 18);
-    lv_label_set_text(ui->screen_main_label_temp, "28℃");
+    lv_obj_set_pos(ui->screen_main_label_temp, 100, 37);
+    lv_obj_set_size(ui->screen_main_label_temp, 100, 18);
+    lv_label_set_text(ui->screen_main_label_temp, " ");
     lv_label_set_long_mode(ui->screen_main_label_temp, LV_LABEL_LONG_WRAP);
 
     //Write style for screen_main_label_temp, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
@@ -459,9 +459,9 @@ void setup_scr_screen_main(lv_ui *ui)
 
     //Write codes screen_main_label_hum
     ui->screen_main_label_hum = lv_label_create(ui->screen_main_cont_weather);
-    lv_obj_set_pos(ui->screen_main_label_hum, 142, 59);
-    lv_obj_set_size(ui->screen_main_label_hum, 60, 18);
-    lv_label_set_text(ui->screen_main_label_hum, "40%");
+    lv_obj_set_pos(ui->screen_main_label_hum, 120, 59);
+    lv_obj_set_size(ui->screen_main_label_hum, 100, 18);
+    lv_label_set_text(ui->screen_main_label_hum, " ");
     lv_label_set_long_mode(ui->screen_main_label_hum, LV_LABEL_LONG_WRAP);
 
     //Write style for screen_main_label_hum, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.

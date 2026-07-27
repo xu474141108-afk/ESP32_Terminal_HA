@@ -15,17 +15,18 @@ ESP_EVENT_DEFINE_BASE(HA_ACTION_EVENTS);
 
 
 #define TAG "HA_WS_CLIENT"
-#define MAX_WS_BUFFER_SIZE (128 * 1024) 
+#define MAX_WS_BUFFER_SIZE (24 * 1024) 
 #define MAX_COUT 6
 //TEST
 #define SAMPLE_NUM 100
 #define PYTHON_SERVER_URL "http://192.168.1.136:8000/upload" 
-static void ws_start_delay_test_packet(void);
 //TEST
 // static void process_ha_json_payload(cJSON *root);
 static void* cjson_psram_malloc(size_t size);
 static void cjson_psram_free(void* ptr);
 static void trigger_reconnect_timer(esp_websocket_client_handle_t ws_client);
+
+
 
 typedef struct {
     char *data;
@@ -33,18 +34,11 @@ typedef struct {
 } ws_event_data_t;
 
 typedef struct {
-    const char *entities[4];
+    const char entities[6][64];
     int valid_count;
 } ha_ws_entities_t;
 
-// test
-float single_delay_buf[SAMPLE_NUM];
-int rssi_buf[SAMPLE_NUM];
-uint8_t test_scene = 1;         //1=近距离无遮挡 2=隔墙远距离
-bool test_finish_flag = false;  //采集完成标志
-uint16_t sample_index = 0;
-int64_t send_ts_us;             //测试包发送时间戳
-// test
+
 
 static char *ws_rx_buffer = NULL;
 static int msg_id = 1; 
@@ -58,36 +52,10 @@ ha_entity_t g_main_ui_device_data[MAX_COUT] =  {0};
 ha_device_t g_HAdevice_ctx;
 weather_data_t entity_weather_data = {.temp = "0", .hum = "0"};
 
-
-static void ha_ws_subscribe_all_events(int msg_id_num)
-{
-    cJSON *root = cJSON_CreateObject();
-    cJSON_AddNumberToObject(root, "id", msg_id_num);
-    cJSON_AddStringToObject(root, "type", "subscribe_events");
-    char *out = cJSON_PrintUnformatted(root);
-    if (esp_websocket_client_is_connected(client)) {
-        esp_websocket_client_send_text(client, out, strlen(out), portMAX_DELAY);
-    }
-    free(out);
-    cJSON_Delete(root);
-}
-
-
- void ha_ws_subscribe_entities(int msg_id, const char **entity_ids, int count) {
-    cJSON *root = cJSON_CreateObject();
-    cJSON_AddNumberToObject(root, "id", msg_id);
-    cJSON_AddStringToObject(root, "type", "subscribe_entities");
-
-    cJSON *array = cJSON_CreateArray();
-    for (int i = 0; i < count; i++) {
-        cJSON_AddItemToArray(array, cJSON_CreateString(entity_ids[i]));
-    }
-    cJSON_AddItemToObject(root, "entity_ids", array);
-
-    char *out = cJSON_PrintUnformatted(root);
-    free(out);
-    cJSON_Delete(root);
-}
+SemaphoreHandle_t ui_data_mutex = NULL;
+QueueHandle_t temp_queue = NULL;
+QueueHandle_t hum_queue = NULL;
+QueueHandle_t date_queue = NULL;
 
 static void ha_ws_entity_control(const char *entity_id, const char *service) {
     char domain[32];
@@ -117,59 +85,19 @@ static void ha_ws_entity_control(const char *entity_id, const char *service) {
     cJSON_Delete(root);
 }
 
-static ha_ws_entities_t ha_ws_entities_filtro(const char **entities_input)
-{
-    ha_ws_entities_t entities_ret = {0};
-    if (entities_input == NULL)
-    {
-        ESP_LOGW(TAG, "entities_input is NULL");
-        return entities_ret;
-    }
-    for (int i = 0; entities_input[i] != NULL && entities_ret.valid_count < MAX_COUT; i++)
-    {
-        const char *current_id = entities_input[i];
-        if (current_id == NULL || current_id[0] == '\0' || strcmp(current_id, "0") == 0)
-        {
-            continue;
-        }
-        bool is_duplicate = false;
-        for (int j = 0; j < entities_ret.valid_count; j++)
-        {
-            if (strcmp(entities_ret.entities[j], current_id) == 0)
-            {
-                is_duplicate = true;
-                break;
-            }
-        }
-        if (!is_duplicate)
-        {
-            entities_ret.entities[entities_ret.valid_count++] = current_id;
-        }
-    }
 
-    if (entities_ret.valid_count <= 0)
-    {
-        ESP_LOGW(TAG, "no entities found");
-    }
-    ESP_LOGI(TAG, "entities_ret.valid_count: %d", entities_ret.valid_count);
-    return entities_ret;
-}
-
-static void ha_ws_entities_json_send(int msg_id_num, ha_ws_entities_t entities_input)
+static void ha_ws_entities_json_send(int msg_id_num, ha_ws_entities_t *entities_input)
 {
     cJSON *root = cJSON_CreateObject();
     cJSON_AddNumberToObject(root, "id", msg_id_num);
     cJSON_AddStringToObject(root, "type", "subscribe_entities");
     cJSON *entity_array = cJSON_CreateArray();
-    ESP_LOGE("ERROR", "entities_input count: %d", entities_input.valid_count);
-    for (int i = 0; i < entities_input.valid_count-1; i++)
+    ESP_LOGE("ERROR", "entities_input count: %d", entities_input->valid_count);
+    for (int i = 0; i < entities_input->valid_count; i++)
     {
-        ESP_LOGE("ERROR", "ERROR SITIO 3: %s,%d", entities_input.entities[i],i);
-        cJSON_AddItemToArray(entity_array, cJSON_CreateString(entities_input.entities[i]));
+        cJSON_AddItemToArray(entity_array, cJSON_CreateString(entities_input->entities[i]));
     }
-    ESP_LOGE("ERROR", "ERROR SITIO 4");
     cJSON_AddItemToObject(root, "entity_ids", entity_array);
-    ESP_LOGE("ERROR", "ERROR SITIO 5");
     char *out = cJSON_PrintUnformatted(root);
     if (out)
     {
@@ -177,8 +105,6 @@ static void ha_ws_entities_json_send(int msg_id_num, ha_ws_entities_t entities_i
         if (esp_websocket_client_is_connected(client))
         {
             esp_websocket_client_send_text(client, out, len, portMAX_DELAY);
-            for(int i = 0; i < entities_input.valid_count; i++){
-            }
         }
         free(out);
     }
@@ -187,21 +113,47 @@ static void ha_ws_entities_json_send(int msg_id_num, ha_ws_entities_t entities_i
 }
 
 
-static void ha_ws_convert_entities_subsc(const ha_entity_t *entity_input){
-    const char *temp_ptr_arr[MAX_COUT+1] = {0}; 
-    int idx = 0;
-    for(int i = 0; i < MAX_COUT; i++)
+static void ha_ws_convert_entities_subsc(const ha_entity_t *entity_input)
+{
+    if (entity_input == NULL) return;
+    static ha_ws_entities_t entity_ids;
+    memset(&entity_ids, 0, sizeof(ha_ws_entities_t));
+    for (int i = 0; i < MAX_COUT; i++)
     {
-        temp_ptr_arr[idx++] = entity_input[i].entity_id;
+        const char *current_id = entity_input[i].entity_id;
+        if (current_id == NULL || current_id[0] == '\0' || strcmp(current_id, "0") == 0)
+        {
+            continue;
+        }
+        if (entity_ids.valid_count >= MAX_COUT) 
+        {
+            ESP_LOGW(TAG, "Reached maximum subscription limit (%d)", MAX_COUT);
+            break;
+        }
+
+        bool is_duplicate = false;
+        for (int j = 0; j < entity_ids.valid_count; j++)
+        {
+            if (strcmp(entity_ids.entities[j], current_id) == 0)
+            {
+                is_duplicate = true;
+                break;
+            }
+        }
+
+        if (!is_duplicate)
+        {
+            strlcpy(entity_ids.entities[entity_ids.valid_count], current_id, sizeof(entity_ids.entities[0]));
+            entity_ids.valid_count++;
+        }
     }
-    temp_ptr_arr[idx] = NULL;
-    ha_ws_entities_t entity_ids = ha_ws_entities_filtro(temp_ptr_arr);
     if (entity_ids.valid_count <= 0)
     {
+        ESP_LOGW(TAG, "No valid entities found for subscription");
         return;
     }
 
-    ha_ws_entities_json_send(msg_id, entity_ids);
+    ha_ws_entities_json_send(msg_id, &entity_ids);
     g_subscribe_entities_id = msg_id;
     msg_id++;
 }
@@ -252,71 +204,80 @@ static void ha_auth_token_send(void)
     cJSON_Delete(auth_msg);
 }
 
-void ha_ws_weather_data_handle(cJSON *item){
+static void ha_ws_weather_data_handle(cJSON *item){
     if (item == NULL) return;
     cJSON *temp_data = cJSON_GetObjectItemByPath(item, "a.temperature");
     cJSON *humi_data = cJSON_GetObjectItemByPath(item, "a.humidity");
-   if (cJSON_IsNumber(temp_data)) {
+    char buf[64];
+
+
+    // 湿度入队
+    if (cJSON_IsNumber(temp_data)) {
         snprintf(entity_weather_data.temp, sizeof(entity_weather_data.temp), "%.1f", temp_data->valuedouble);
+        strncpy(buf, entity_weather_data.temp, sizeof(buf)-1);
+        buf[sizeof(buf)-1] = '\0';
+        xQueueOverwrite(temp_queue, buf);
     }else {
         ESP_LOGW(TAG, "invalid temp data");
     }
 
-    // 湿度字段安全处理
-   if (cJSON_IsNumber(humi_data)) {
+    if (cJSON_IsNumber(humi_data)) {
         snprintf(entity_weather_data.hum, sizeof(entity_weather_data.hum), "%d", humi_data->valueint);
+        strncpy(buf, entity_weather_data.hum, sizeof(buf)-1);
+        buf[sizeof(buf)-1] = '\0';
+        xQueueOverwrite(hum_queue, buf);
     } else {
         ESP_LOGW(TAG, "invalid hum data");
     }
     ESP_LOGI(TAG, "Temp=%s, hum=%s", entity_weather_data.temp, entity_weather_data.hum);
 }
 
+
 void ha_ws_message_update_handle(cJSON *root) {
     if (!cJSON_GetObjectItem(root, "event")) return;
     const char *e_id = NULL;
     const char *new_state = NULL;
-    if (cJSON_GetObjectItemByPath(root, "event.variables.trigger")) {
-        cJSON *id_node = cJSON_GetObjectItemByPath(root, "event.variables.trigger.entity_id");
-        cJSON *state_node = cJSON_GetObjectItemByPath(root, "event.variables.trigger.to_state.state");
-        if (id_node && state_node) {
-            e_id = id_node->valuestring;
-            new_state = state_node->valuestring;
-            ESP_LOGI(TAG, "Trigger: %s %s", e_id, new_state);
-        }
-    } else if(cJSON_GetObjectItemByPath(root, "event.data")){
-        cJSON *id_node = cJSON_GetObjectItem(root, "event.data.entity_id");
-        cJSON *state_node = cJSON_GetObjectItemByPath(root, "event.data.new_state.state");
-        if (id_node && state_node) {
-            e_id = id_node->valuestring;
-            new_state = state_node->valuestring;
-            ESP_LOGI(TAG, "Entities: %s %s", e_id, new_state);
-        }
-    } 
-    else if(cJSON_GetObjectItemByPath(root, "event.c")){
+    //数据改变
+    if(cJSON_GetObjectItemByPath(root, "event.c")){
         cJSON *target_node = cJSON_GetObjectItemByPath(root, "event.c");
         if (target_node) {
             cJSON *item = target_node->child;
             while (item) {
                 cJSON *state_node = cJSON_GetObjectItemByPath(item, "+.s");
                 cJSON *all_node = cJSON_GetObjectItemByPath(item, "+.a");
-                if (state_node) {
+                if (state_node&& cJSON_IsString(state_node)) {
                     e_id = item->string;
                     new_state = state_node->valuestring;
-                    for (int i = 0; i < 5; i++) {
+                    for (int i = 0; i < 6; i++) {
                         if (strcmp(g_main_ui_device_data[i].entity_id, e_id) == 0) {
                             strncpy(g_main_ui_device_data[i].state, new_state, sizeof(g_main_ui_device_data[i].state) - 1);
+                            g_main_ui_device_data[i].state[sizeof(g_main_ui_device_data[i].state)-1] = '\0';
                             ESP_LOGI(TAG, "entity_id: %s, new_state: %s", e_id, new_state);
+                            if (i == 4){
+                                char buf[64];
+                                strncpy(buf, new_state, sizeof(buf)-1);
+                                buf[sizeof(buf)-1] = '\0';
+                                xQueueOverwrite(date_queue, buf);
+                            }
                         }
                     }
-                }else if (all_node) {
+                }
+                if (all_node){
                     e_id = item->string;
-                    new_state = state_node->valuestring;
-                    if (strcmp(g_main_ui_device_data[5].entity_id, e_id) == 0) {
-                        strncpy(g_main_ui_device_data[5].state, new_state, sizeof(g_main_ui_device_data[5].state) - 1);
-                        ESP_LOGI(TAG, "entity_id: %s, new_state: %s", e_id, new_state);
-                        ha_ws_weather_data_handle(item);
+                    if (state_node != NULL && state_node->valuestring != NULL){new_state = state_node->valuestring;}
+                    else{new_state = "";}
+                    if(new_state){
+                        if (strcmp(g_main_ui_device_data[5].entity_id, e_id) == 0) {
+                            strncpy(g_main_ui_device_data[5].state, new_state, sizeof(g_main_ui_device_data[5].state) - 1);
+                            g_main_ui_device_data[5].state[sizeof(g_main_ui_device_data[5].state)-1] = '\0';
+                            ESP_LOGE(TAG, "entity_id: %s, new_state: %s", e_id, new_state);
+                            ha_ws_weather_data_handle(item);
+                        }
+                    }else{ 
+                        ESP_LOGW(TAG, "Weather data missing in the update for entity_id: %s", e_id);
                     }
-                }else{
+                }
+                if(!state_node && !all_node){
                     ESP_LOGI(TAG, "not found entity type");
                 }         
                 item = item->next;
@@ -324,6 +285,7 @@ void ha_ws_message_update_handle(cJSON *root) {
             return;
         }
     }
+    //首次拉取
     else if(cJSON_GetObjectItemByPath(root, "event.a")){
         cJSON *target_node = cJSON_GetObjectItemByPath(root, "event.a");
         if (target_node) {
@@ -336,8 +298,14 @@ void ha_ws_message_update_handle(cJSON *root) {
                     for (int i = 0; i < MAX_COUT; i++) {
                         if (strcmp(g_main_ui_device_data[i].entity_id, e_id) == 0) {
                             strncpy(g_main_ui_device_data[i].state, new_state, sizeof(g_main_ui_device_data[i].state) - 1);
+                            g_main_ui_device_data[i].state[sizeof(g_main_ui_device_data[i].state)-1] = '\0';
                             ESP_LOGI(TAG, "entity_id: %s, new_state: %s", e_id, new_state);
-                            if (i == 5) { 
+                            if (i == 4){
+                                char buf[64];
+                                strncpy(buf, g_main_ui_device_data[4].state, sizeof(buf)-1);
+                                buf[sizeof(buf)-1] = '\0';
+                                xQueueOverwrite(date_queue, buf);
+                            }else if (i==5) { 
                                 ha_ws_weather_data_handle(item);
                             }
                         }
@@ -347,21 +315,6 @@ void ha_ws_message_update_handle(cJSON *root) {
             }
             return;
         }
-    }else{
-        ESP_LOGI(TAG, "Error parsing JSON");
-        return;
-    }
-
-    if (e_id != NULL){
-        for (int i = 0; i < MAX_COUT; i++) {
-            if (strcmp(g_main_ui_device_data[i].entity_id,e_id)==0){
-                strncpy(g_main_ui_device_data[i].state, new_state, sizeof(g_main_ui_device_data[i].state) - 1);
-                g_main_ui_device_data[i].state[sizeof(g_main_ui_device_data[i].state) - 1] = '\0';
-                ESP_LOGI(TAG, "Update state: %s -> %s",g_main_ui_device_data[i].entity_id,g_main_ui_device_data[i].state);
-            }
-        }
-    }else{
-        ESP_LOGD(TAG,"entity_id empty");
     }
 }
 
@@ -375,16 +328,12 @@ static void ha_ws_message_handle(cJSON *root){
     else if (strcmp(type, "auth_ok") == 0) {
         ESP_LOGI(TAG, "Autorised, subscribe entities states");     
         ha_ws_convert_entities_subsc(g_main_ui_device_data);
-        ha_ws_subscribe_all_events(msg_id++);
     }
     else if (strcmp(type, "auth_invalid") == 0) {
         ESP_LOGE(TAG, "Autorisation failed, will be closed");
     }
     else if (strcmp(type, "result") == 0) {
         cJSON *id_item = cJSON_GetObjectItem(root, "id");
-        // char *result_dump = cJSON_PrintUnformatted(root);
-        // ESP_LOGW(TAG, "result: %s", result_dump); // 改成D日志减少刷屏
-        // free(result_dump);
 
         if (cJSON_IsNumber(id_item) && id_item->valueint == msg_id - 1) {
             ESP_LOGD(TAG, "Recieved result, ID: %d", msg_id - 1);
@@ -470,7 +419,6 @@ static void ha_ws_logic_handler(void* handler_args, esp_event_base_t base, int32
     case HA_WS_LVGL_REQ_ALL_DATA:{
     break;}
     case HA_WS_TEST:{
-        ws_start_delay_test_packet();
     }
     }
 }
@@ -492,25 +440,7 @@ static void ha_ws_event_handler(void *handler_args, esp_event_base_t base, int32
             }
             //  Check  if the message is complete
             if (data->op_code == 0x01 && data->payload_offset + data->data_len == data->payload_len && data->payload_len > 0) {
-                if(strstr(ws_rx_buffer, "\"event_type\":\"delay_test\"") && !test_finish_flag)
-                {
-                    int64_t recv_ts = esp_timer_get_time();
-                    float rtt_ms = (recv_ts - send_ts_us) / 1000.0f;
-                    ESP_LOGI(TAG, "匹配到测试包，发包ts:%lld，收包ts:%lld，单程延迟：%.2fms", send_ts_us, recv_ts, rtt_ms/2);
-                    float single_delay = rtt_ms / 2.0f;
-
-                    int rssi_val = 0;
-                    esp_wifi_sta_get_rssi(&rssi_val);
-
-                    single_delay_buf[sample_index] = single_delay;
-                    rssi_buf[sample_index] = rssi_val;
-                    sample_index++;
-                    if(sample_index >= SAMPLE_NUM)
-                    {
-                        test_finish_flag = true;
-                        ESP_LOGI(TAG, "已采集满100组时延样本，等待后台上传Python");
-                    }
-                }
+                
 
 
                 ws_event_data_t event_payload = {
@@ -580,7 +510,10 @@ void websocket_app_start() {
     };
     client = esp_websocket_client_init(&ws_cfg);
     esp_websocket_register_events(client, WEBSOCKET_EVENT_ANY, ha_ws_event_handler, (void *)client);
+
+ESP_LOGI(TAG, "Internal SRAM Free before start: %u bytes", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
     esp_websocket_client_start(client);
+ESP_LOGI(TAG, "Internal SRAM Free after start: %u bytes", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
 }
 
 static void* cjson_psram_malloc(size_t size) {
@@ -668,7 +601,7 @@ void ha_rest_get_states_to_psram() {
             const char *eid = eid_obj->valuestring;
 
             // 筛选条件：只取 light 和 switch 设备
-            if (strstr(eid, "light.") || strstr(eid, "switch.")||strstr(eid, "input_button.")) {
+            if (strstr(eid, "light.") || strstr(eid, "switch.")||strstr(eid, "input_boolean.")) {
                 if (g_HAdevice_ctx.device_count >= 50) break;
 
                 cJSON *attrs = cJSON_GetObjectItem(item, "attributes");
@@ -731,107 +664,3 @@ static void trigger_reconnect_timer(esp_websocket_client_handle_t ws_client) {
     ESP_LOGI("RECONNECT", "定时器已启动，1秒后将重启 WebSocket");
 }
 
-
-// test funcion
-static esp_err_t send_delay_data_to_python(void)
-{
-    cJSON_Hooks hooks = {
-        .malloc_fn = cjson_psram_malloc,
-        .free_fn = cjson_psram_free
-    };
-    cJSON_InitHooks(&hooks);
-
-    cJSON *root = cJSON_CreateObject();
-    cJSON *delay_array = cJSON_CreateArray();
-    cJSON *rssi_array = cJSON_CreateArray();
-
-    int rssi_sum = 0;
-    for(int i = 0; i < SAMPLE_NUM; i++)
-    {
-        cJSON_AddItemToArray(delay_array, cJSON_CreateNumber(single_delay_buf[i]));
-        cJSON_AddItemToArray(rssi_array, cJSON_CreateNumber(rssi_buf[i]));
-        rssi_sum += rssi_buf[i];
-    }
-    float avg_rssi = (float)rssi_sum / SAMPLE_NUM;
-
-    cJSON_AddItemToObject(root, "single_delay_ms", delay_array);
-    cJSON_AddItemToObject(root, "rssi_dbm", rssi_array);
-    // 上传本组平均WiFi信号强度替代手动scene标记
-    cJSON_AddNumberToObject(root, "avg_rssi_dbm", avg_rssi);
-
-    char *json_text = cJSON_PrintUnformatted(root);
-    if(json_text == NULL)
-    {
-        cJSON_Delete(root);
-        return ESP_ERR_NO_MEM;
-    }
-
-    //HTTP POST 上传
-    esp_http_client_config_t http_cfg = {
-        .url = PYTHON_SERVER_URL,
-        .method = HTTP_METHOD_POST,
-        .timeout_ms = 5000, 
-    };
-    esp_http_client_handle_t http_client = esp_http_client_init(&http_cfg);
-    esp_http_client_set_header(http_client, "Content-Type", "application/json");
-    esp_http_client_set_post_field(http_client, json_text, strlen(json_text));
-    esp_err_t ret = esp_http_client_perform(http_client);
-
-    if(ret == ESP_OK)
-    {
-        ESP_LOGI(TAG, "时延数据上传Python成功,本组平均RSSI: %.2f dBm", avg_rssi);
-    }
-    else
-    {
-        ESP_LOGE(TAG, "时延数据上传失败, err:%s", esp_err_to_name(ret));
-    }
-
-    //释放资源
-    esp_http_client_cleanup(http_client);
-    free(json_text);
-    cJSON_Delete(root);
-
-    //重置缓存，下一轮采集
-    sample_index = 0;
-    test_finish_flag = false;
-    return ret;
-}
-
-
-static void ws_ha_test_envia(void *arg){
-    
-    while(1)
-    {
-        if(test_finish_flag)
-        {
-            send_delay_data_to_python();
-        }
-        vTaskDelay(pdMS_TO_TICKS(1000));
-    }
-}
-
-void ws_ha_test_init(void)
-{
-    xTaskCreate(ws_ha_test_envia, "ws_ha_test_envia", 16384, NULL, 5, NULL);
-}
-
-static void ws_start_delay_test_packet(void)
-{
-    if(test_finish_flag)
-    {
-        ESP_LOGW(TAG, "上一轮数据未上传完成，禁止发包");
-        return;
-    }
-    if(!esp_websocket_client_is_connected(client))
-    {
-        ESP_LOGE(TAG, "HA WS未连接,无法发送测试包");
-        return;
-    }
-
-    send_ts_us = esp_timer_get_time();
-    char payload[192];
-    snprintf(payload, sizeof(payload),
-        "{\"id\":%d,\"type\":\"fire_event\",\"event_type\":\"delay_test\",\"event_data\":{\"ts\":%lld}}",
-        msg_id++, send_ts_us);
-    esp_websocket_client_send_text(client, payload, strlen(payload), portMAX_DELAY);
-}

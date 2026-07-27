@@ -13,14 +13,34 @@
  **********************/
 #define TAG "Custom"
 
-// HA设备操作界面
 
+// HA设备操作界面
 static int g_temp_selecting_index = -1;
 //timer
 lv_timer_t *wifi_timer = NULL;
 lv_timer_t *ha_timer = NULL;
 lv_timer_t *ota_timer = NULL;
 lv_timer_t *main_timer = NULL;
+lv_timer_t *main_weather_timer = NULL;
+static char last_state[4][8] = {0};
+static char last_weather_state[64] = {0};
+static char temp_buf[64] = {0};
+static char hum_buf[64] = {0};
+static char date_buf[64] = {0};
+bool is_first_load = false;
+bool is_first_load_wifi = false;
+bool is_first_load_ota = false;
+#include <string.h>
+#include "gui_guider.h"
+
+// 状态-图片映射表结构体
+typedef struct
+{
+    const char *state_str;
+    const void *img_src;
+} weather_img_map_t;
+
+
 
 static void HA_json_to_list(lv_obj_t *list_obj, ha_device_t *devices);
 static void HA_select_event_show(lv_event_t * e);
@@ -131,84 +151,92 @@ void OTA_MQTT_state_monitor_task(lv_timer_t * timer)
         return;
     }
     ota_mqtt_context_t received_state = g_ota_mqtt_ctx;
-    const char *s_state = "State: Unknown";
-    char buf_cur[50] = "Current: ";
-    char buf_las[50] = "Latest: ";
-    snprintf(buf_cur, sizeof(buf_cur), "Current: %s", received_state.current_ver);
-    switch (received_state.state)
-    {
-        case OTA_MQTT_STATE_IDLE:{
-            s_state = "State: IDLE"; 
-            break;}
-        case OTA_MQTT_STATE_READY:
-            s_state = "State: Ready to update"; 
-            snprintf(buf_las, sizeof(buf_las), "Latest: %s", received_state.latest_ver);
-            break;
-        case OTA_MQTT_STATE_DOWNLOADING:
-            s_state = "State: Downloading";
-            snprintf(buf_las, sizeof(buf_las), "Latest: %s", received_state.latest_ver);
-            break;
-        case OTA_MQTT_STATE_SUCCESS:{
-            s_state = "State: Update successful";
-            break;}
-        case OTA_MQTT_STATE_FAILED:{
-            s_state = "State: Update failed";
-            break;}
-        default:{
-            s_state = "State: Unknown state";
-            break;}
-    }
-    lv_label_set_text(guider_ui.screen_OTA_label_OTA_state, s_state);
-    lv_label_set_text(guider_ui.screen_OTA_label_OTA_info1, buf_cur);
-    lv_label_set_text(guider_ui.screen_OTA_label_OTA_info2, buf_las);
+    static ota_mqtt_state_t last_state = OTA_MQTT_STATE_IDLE;
+    if(received_state.state != last_state || is_first_load_ota) {
+        last_state = received_state.state;
+        is_first_load_ota = false;
+         const char *s_state = "State: Unknown";
+        char buf_cur[50] = "Current: ";
+        char buf_las[50] = "Latest: ";
+        snprintf(buf_cur, sizeof(buf_cur), "Current: %s", received_state.current_ver);
+        switch (received_state.state)
+        {
+            case OTA_MQTT_STATE_IDLE:{
+                s_state = "State: IDLE"; 
+                break;}
+            case OTA_MQTT_STATE_READY:
+                s_state = "State: Ready to update"; 
+                snprintf(buf_las, sizeof(buf_las), "Latest: %s", received_state.latest_ver);
+                break;
+            case OTA_MQTT_STATE_DOWNLOADING:
+                s_state = "State: Downloading";
+                snprintf(buf_las, sizeof(buf_las), "Latest: %s", received_state.latest_ver);
+                break;
+            case OTA_MQTT_STATE_SUCCESS:{
+                s_state = "State: Update successful";
+                break;}
+            case OTA_MQTT_STATE_FAILED:{
+                s_state = "State: Update failed";
+                break;}
+            default:{
+                s_state = "State: Unknown state";
+                break;}
+        }
+        lv_label_set_text(guider_ui.screen_OTA_label_OTA_state, s_state);
+        lv_label_set_text(guider_ui.screen_OTA_label_OTA_info1, buf_cur);
+        lv_label_set_text(guider_ui.screen_OTA_label_OTA_info2, buf_las);
+    } 
 }
 
-void custom_init(lv_ui *ui)
-{
-    /* Add your codes here */
-}
+
 
 void WIFI_state_monitor_task(lv_timer_t * timer){
 
     if(lv_scr_act() != guider_ui.screen_wifi)
     {return;}
     wifi_sm_t received_state = g_wifi_sm;
-    const char *s_state = "State: Unknown";
-    char buf_ssid[48] = "SSID: ";
-    char buf_ip[48] = "IP: ";
-    switch (received_state.wifi_FSM_state){
-        case WIFI_STATE_IDLE:{
-            s_state = "State: Checking"; 
-            break;}
-        case WIFI_STATE_NONVS_CONFIG:{
-            s_state = "State: No WiFi Config";
-            break;}
-        case WIFI_STATE_STA_CONNECTING: {
-            s_state = "State: Connecting";
-            break;}
-        case WIFI_STATE_PROVISIONING:
-            s_state = "State: Provisioning";
-            snprintf(buf_ssid, sizeof(buf_ssid), "SSID: ESP32_AP");
-            snprintf(buf_ip, sizeof(buf_ip), "Password: 12345678");
-            break;
-        case WIFI_STATE_WAIT_BEGIN_PROVISIONING:{
-            s_state = "State: No WiFi Config now, waiting for provisioning";
-            break;}
-        case WIFI_STATE_CONNECTED:
-            s_state = "State: Connected";
-            snprintf(buf_ssid, sizeof(buf_ssid), "SSID: %s", received_state.wifi_ssid);
-            snprintf(buf_ip, sizeof(buf_ip), "IP: %s", received_state.wifi_ip);
-            break;
-        case WIFI_STATE_DISCONNECTED:{
-            s_state = "State: Disconnected";
-            break;}
-        default:{
-            s_state = "State: Unknown state";
-            break;}
-    } 
-    lv_label_set_text(guider_ui.screen_wifi_label_wifi_state, s_state);
-    lv_label_set_text(guider_ui.screen_wifi_label_wifi_info1, buf_ssid);
-    lv_label_set_text(guider_ui.screen_wifi_label_wifi_info2, buf_ip);
+    static wifi_state_t wifi_state = WIFI_STATE_IDLE;
+    if (received_state.wifi_FSM_state != wifi_state || is_first_load_wifi) {
+        wifi_state = received_state.wifi_FSM_state;
+        const char *s_state = "State: Unknown";
+        char buf_ssid[48] = "SSID: ";
+        char buf_ip[48] = "IP: ";
+        switch (received_state.wifi_FSM_state){
+            case WIFI_STATE_IDLE:{
+                s_state = "State: Checking"; 
+                break;}
+            case WIFI_STATE_NONVS_CONFIG:{
+                s_state = "State: No WiFi Config";
+                break;}
+            case WIFI_STATE_STA_CONNECTING: {
+                s_state = "State: Connecting";
+                break;}
+            case WIFI_STATE_PROVISIONING:
+                s_state = "State: Provisioning";
+                snprintf(buf_ssid, sizeof(buf_ssid), "SSID: ESP32_AP");
+                snprintf(buf_ip, sizeof(buf_ip), "Password: 12345678");
+                break;
+            case WIFI_STATE_WAIT_BEGIN_PROVISIONING:{
+                s_state = "State: No WiFi Config now, waiting for provisioning";
+                break;}
+            case WIFI_STATE_CONNECTED:
+                s_state = "State: Connected";
+                snprintf(buf_ssid, sizeof(buf_ssid), "SSID: %s", received_state.wifi_ssid);
+                snprintf(buf_ip, sizeof(buf_ip), "IP: %s", received_state.wifi_ip);
+                break;
+            case WIFI_STATE_DISCONNECTED:{
+                s_state = "State: Disconnected";
+                break;}
+            default:{
+                s_state = "State: Unknown state";
+                break;}
+        } 
+        lv_label_set_text(guider_ui.screen_wifi_label_wifi_state, s_state);
+        lv_label_set_text(guider_ui.screen_wifi_label_wifi_info1, buf_ssid);
+        lv_label_set_text(guider_ui.screen_wifi_label_wifi_info2, buf_ip);
+        is_first_load_wifi = false;
+    }
+    
 }
 
 //main screen
@@ -224,20 +252,58 @@ static lv_obj_t *device_site_get(uint8_t idx)
             return guider_ui.screen_main_img_cont_rd;
         case 3:
             return guider_ui.screen_main_img_cont_md;
+        case 4:
+            return guider_ui.screen_main_img_cont_weather;
         default:
             return NULL;
     }
 }
+
+void weather_state_switch_img(const char *weather_state)
+{
+    ESP_LOGI(TAG, "Weather state changed");
+    const weather_img_map_t map_table[] = {
+        {"clear-night",     &_partlycloudy_RGB565A8_100x100},
+        {"cloudy",          &_partlycloudy_RGB565A8_100x100},
+        {"fog",             &_partlycloudy_RGB565A8_100x100},
+        {"hail",            &_partlycloudy_RGB565A8_100x100},
+        {"lightning",       &_rainy_RGB565A8_100x100},
+        {"lightning-rainy", &_rainy_RGB565A8_100x100},
+        {"partlycloudy",    &_partlycloudy_RGB565A8_100x100},
+        {"pouring",         &_rainy_RGB565A8_100x100},
+        {"rainy",           &_rainy_RGB565A8_100x100},
+        {"sunny",           &_sunny_RGB565A8_100x100},
+        {"windy",           &_partlycloudy_RGB565A8_100x100},
+        {"windy-variant",   &_partlycloudy_RGB565A8_100x100},
+        {NULL,              &_sunny_RGB565A8_100x100} 
+    };
+
+    lv_obj_t *img_obj = device_site_get(4);
+    const void * target_img = &_sunny_RGB565A8_100x100;
+    for (int i = 0; map_table[i].state_str != NULL; i++)
+    {
+        if (strcmp(weather_state, map_table[i].state_str) == 0)
+        {
+            target_img = map_table[i].img_src;
+            break;
+        }
+    }
+    lv_img_set_src(img_obj, target_img);
+}
 static void Main_date_monitor_task(lv_timer_t *timer)
 { 
     if (lv_scr_act() != guider_ui.screen_main) {return;}
-    static char last_state[4][5] = {0};
+    bool temp_updated = false;
+    bool hum_updated = false;
+    bool date_updated = false;
+
     for(int i = 0; i < 4; i++)
     {
         if(strcmp(g_main_ui_device_data[i].state, last_state[i]) != 0){
             strcpy(last_state[i], g_main_ui_device_data[i].state);
             lv_obj_t *img_obj = device_site_get(i);
             if(img_obj == NULL) continue;
+            ESP_LOGI(TAG, "Device state changed");
             if (strcmp(g_main_ui_device_data[i].state, "on") == 0)
             {
                 lv_image_set_src(img_obj, &_swtich_on_RGB565A8_40x40);
@@ -246,13 +312,73 @@ static void Main_date_monitor_task(lv_timer_t *timer)
             }
         }
     }
-    lv_label_set_text(guider_ui.screen_main_label_date, g_main_ui_device_data[4].state);
-    lv_label_set_text(guider_ui.screen_main_label_temp, entity_weather_data.temp);
-    lv_label_set_text(guider_ui.screen_main_label_hum, entity_weather_data.hum);
+    
+    if(strcmp(g_main_ui_device_data[5].state, last_weather_state) != 0){
+        strcpy(last_weather_state, g_main_ui_device_data[5].state);
+        weather_state_switch_img(last_weather_state);
+    }else if(is_first_load)
+    {
+        weather_state_switch_img(last_weather_state);
+    }
+
+    if(xQueueReceive(temp_queue, temp_buf, 0) == pdPASS)
+    {
+        size_t t_len = strlen(temp_buf);
+        if(t_len < sizeof(temp_buf)-3)
+        {
+            temp_buf[t_len++] = '*';
+            temp_buf[t_len++] = 'C';
+            temp_buf[t_len] = '\0';
+        }
+        temp_updated = true;
+    }
+    // 读取湿度队列
+    if(xQueueReceive(hum_queue, hum_buf, 0) == pdPASS)
+    {
+        size_t h_len = strlen(hum_buf);
+        if(h_len < sizeof(hum_buf)-2)
+        {
+            hum_buf[h_len++] = '%';
+            hum_buf[h_len] = '\0';
+        }
+        hum_updated = true;
+    }
+
+    if(xQueueReceive(date_queue, date_buf, 0) == pdPASS)
+    {
+        size_t d_len = strlen(date_buf);
+        if(d_len < sizeof(date_buf)-1)
+        {
+            date_buf[d_len] = '\0';
+        }
+        date_updated = true;
+    }
+
+    if(date_updated || is_first_load)
+    {
+        ESP_LOGI(TAG, "Date updated");
+        lv_label_set_text(guider_ui.screen_main_label_date, date_buf);
+    }
+    if(temp_updated || is_first_load)
+    {
+        ESP_LOGI(TAG, "Temperature updated");
+        lv_label_set_text(guider_ui.screen_main_label_temp, temp_buf);
+    }
+    if(hum_updated || is_first_load)
+    {
+        ESP_LOGI(TAG, "Humidity updated");
+        lv_label_set_text(guider_ui.screen_main_label_hum, hum_buf);
+    }
+    is_first_load = false;
 }
+
 
 void all_timer_creat_init()
 {
+    temp_queue = xQueueCreate(1, 64);
+    hum_queue = xQueueCreate(1, 64);
+    date_queue = xQueueCreate(1, 64);
+
     wifi_timer = lv_timer_create(WIFI_state_monitor_task, 500, NULL);
     lv_timer_pause(wifi_timer);
     ota_timer = lv_timer_create(OTA_MQTT_state_monitor_task, 500, NULL);
@@ -262,3 +388,7 @@ void all_timer_creat_init()
     main_timer = lv_timer_create(Main_date_monitor_task, 1000, NULL);
 }
 
+void custom_init(lv_ui *ui)
+{
+    /* Add your codes here */
+}

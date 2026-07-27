@@ -15,11 +15,14 @@ extern "C" {
 #include "gui_guider.h"
 
 
-
 extern lv_timer_t *wifi_timer;
 extern lv_timer_t *ha_timer;
 extern lv_timer_t *ota_timer;
 extern lv_timer_t *main_timer;
+extern lv_timer_t *main_weather_timer;
+extern  bool is_first_load;
+extern  bool is_first_load_wifi;
+extern  bool is_first_load_ota;
 
 void custom_init(lv_ui *ui);
 //OTA升级界面
@@ -29,7 +32,7 @@ void OTA_MQTT_state_monitor_task(lv_timer_t * timer);
 void HA_state_monitor_task(lv_timer_t * timer);
 
 void WIFI_state_monitor_task(lv_timer_t * timer);
-
+void weather_state_switch_img(const char *weather_state);
 
 void all_timer_creat_init();
 #ifdef __cplusplus
