@@ -27,3 +27,5 @@
    - 两套升级方案：本地HTTP和华为云平台MQTT检测固件版本
 7. **低延迟同步**
 本地触控事件上传HA和HA中设备状态更新下发通过WebSocket实时同步，端到端延迟最低60ms。
+7. **分层架构图**
+<img width="576" height="800" alt="image" src="https://github.com/user-attachments/assets/489fe9a6-8f5a-4f40-a9ef-2d36a70465cc" />
